@@ -33,6 +33,7 @@ class LobbyPage extends StatelessWidget {
                     state.gameState.currentRound!.phase != GamePhase.waiting) {
                   // Capture the bloc from the listener context
                   final bloc = context.read<CardGameBloc>();
+                  print('Navigating to GameTable - BLoC closed: ${bloc.isClosed}');
                   Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(

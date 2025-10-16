@@ -359,6 +359,7 @@ class _HomePageState extends State<HomePage> {
               hostName: _nameController.text.trim(),
               playerCount: _selectedPlayerCount,
             )),
+          lazy: false,  // Create BLoC immediately
           child: const LobbyPage(),
         ),
       ),

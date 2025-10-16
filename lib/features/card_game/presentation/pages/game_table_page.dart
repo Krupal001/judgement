@@ -387,28 +387,27 @@ class _GameTablePageState extends State<GameTablePage> {
   }
 
   void _showBidDialog(BuildContext context, game, String playerId) {
+    // Capture the BLoC reference BEFORE showing the dialog
+    final bloc = context.read<CardGameBloc>();
+    
+    print('Showing dialog - BLoC closed: ${bloc.isClosed}');
+    
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) => BidDialog(
         maxBid: game.currentRound!.cardsPerPlayer,
         onBidPlaced: (bid) {
+          print('Bid placed: $bid - BLoC closed: ${bloc.isClosed}');
           Navigator.pop(dialogContext);
-          // Use the original context to access the BLoC after dialog is closed
-          if (context.mounted) {
-            try {
-              final bloc = context.read<CardGameBloc>();
-              if (!bloc.isClosed) {
-                print('Adding PlaceBidEvent for player $playerId with bid $bid');
-                bloc.add(
-                  PlaceBidEvent(playerId: playerId, bid: bid),
-                );
-              } else {
-                print('BLoC is closed, cannot add event');
-              }
-            } catch (e) {
-              print('Error adding bid event: $e');
-            }
+          
+          if (!bloc.isClosed) {
+            print('Adding PlaceBidEvent for player $playerId with bid $bid');
+            bloc.add(
+              PlaceBidEvent(playerId: playerId, bid: bid),
+            );
+          } else {
+            print('ERROR: BLoC is closed, cannot add event');
           }
         },
         canBid: (bid) => game.canBid(bid),
