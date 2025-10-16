@@ -53,20 +53,23 @@ class _GameTablePageState extends State<GameTablePage> {
               final bidKey = '${round.roundNumber}_${currentPlayer.id}_${game.currentPlayer?.id}';
               
               // Show bid dialog if it's player's turn to bid and we haven't shown it yet
-              if (round.phase == GamePhase.bidding &&
+              final shouldShowDialog = round.phase == GamePhase.bidding &&
                   game.currentPlayer?.id == currentPlayer.id &&
                   !currentPlayer.hasBid &&
-                  _lastBidDialogPlayerId != bidKey) {
-                print('Should show bid dialog for ${currentPlayer.name}');
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (_lastBidDialogPlayerId != bidKey && mounted) {
-                    print('Showing bid dialog for ${currentPlayer.name}');
-                    setState(() {
-                      _lastBidDialogPlayerId = bidKey;
-                    });
-                    _showBidDialog(context, game, currentPlayer.id);
-                  }
-                });
+                  _lastBidDialogPlayerId != bidKey;
+              
+              if (shouldShowDialog) {
+                print('Should show bid dialog for ${currentPlayer.name} with key: $bidKey');
+                // Set the key immediately to prevent multiple shows
+                if (_lastBidDialogPlayerId != bidKey) {
+                  _lastBidDialogPlayerId = bidKey;
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted) {
+                      print('Showing bid dialog for ${currentPlayer.name}');
+                      _showBidDialog(context, game, currentPlayer.id);
+                    }
+                  });
+                }
               }
 
               return Column(
@@ -384,9 +387,6 @@ class _GameTablePageState extends State<GameTablePage> {
   }
 
   void _showBidDialog(BuildContext context, game, String playerId) {
-    // Capture the BLoC before showing the dialog
-    final bloc = context.read<CardGameBloc>();
-    
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -394,9 +394,22 @@ class _GameTablePageState extends State<GameTablePage> {
         maxBid: game.currentRound!.cardsPerPlayer,
         onBidPlaced: (bid) {
           Navigator.pop(dialogContext);
-          bloc.add(
-            PlaceBidEvent(playerId: playerId, bid: bid),
-          );
+          // Use the original context to access the BLoC after dialog is closed
+          if (context.mounted) {
+            try {
+              final bloc = context.read<CardGameBloc>();
+              if (!bloc.isClosed) {
+                print('Adding PlaceBidEvent for player $playerId with bid $bid');
+                bloc.add(
+                  PlaceBidEvent(playerId: playerId, bid: bid),
+                );
+              } else {
+                print('BLoC is closed, cannot add event');
+              }
+            } catch (e) {
+              print('Error adding bid event: $e');
+            }
+          }
         },
         canBid: (bid) => game.canBid(bid),
       ),
