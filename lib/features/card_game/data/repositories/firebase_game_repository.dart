@@ -49,74 +49,61 @@ class FirebaseGameRepository implements GameRepository {
     String playerName,
   ) async {
     try {
-      final playerId = const Uuid().v4();
+      print('Attempting to join game: $gameId with player: $playerName');
       
-      // Use transaction to prevent race conditions
-      final transactionResult = await _database.child('games').child(gameId).runTransaction((currentData) {
-        if (currentData == null) {
-          return Transaction.abort();
-        }
-
-        final gameState = _gameStateFromJson(currentData as Map, gameId);
-        
-        // Check if game has already started
-        if (gameState.currentRound != null && gameState.currentRound!.phase != GamePhase.waiting) {
-          return Transaction.abort();
-        }
-        
-        // Check if player with same name already exists
-        final existingPlayer = gameState.players.where((p) => p.name.toLowerCase() == playerName.toLowerCase());
-        if (existingPlayer.isNotEmpty) {
-          return Transaction.abort();
-        }
-        
-        // Check if room is full
-        if (gameState.players.length >= gameState.requiredPlayers) {
-          return Transaction.abort();
-        }
-
-        final newPlayer = Player(
-          id: playerId,
-          name: playerName,
-          isHost: false,
-        );
-
-        final updatedPlayers = [...gameState.players, newPlayer];
-        final updatedGame = gameState.copyWith(players: updatedPlayers);
-
-        return Transaction.success(_gameStateToJson(updatedGame));
-      });
-
-      if (!transactionResult.committed) {
-        // Check specific failure reason by re-reading the data
-        final snapshot = await _database.child('games').child(gameId).get();
-        
-        if (!snapshot.exists) {
-          return const Left(ServerFailure(message: 'Game not found'));
-        }
-
-        final gameState = _gameStateFromJson(snapshot.value as Map, gameId);
-        
-        if (gameState.currentRound != null && gameState.currentRound!.phase != GamePhase.waiting) {
-          return const Left(GameAlreadyStartedFailure());
-        }
-        
-        final existingPlayer = gameState.players.where((p) => p.name.toLowerCase() == playerName.toLowerCase());
-        if (existingPlayer.isNotEmpty) {
-          return const Left(DuplicatePlayerFailure());
-        }
-        
-        if (gameState.players.length >= gameState.requiredPlayers) {
-          return const Left(GameFullFailure());
-        }
-        
-        return const Left(ServerFailure(message: 'Failed to join game'));
+      final snapshot = await _database.child('games').child(gameId).get();
+      
+      if (!snapshot.exists) {
+        print('Join failed: Game not found');
+        return const Left(ServerFailure(message: 'Game not found'));
       }
 
-      final updatedGame = _gameStateFromJson(transactionResult.snapshot.value as Map, gameId);
+      final gameState = _gameStateFromJson(snapshot.value as Map, gameId);
+      
+      print('Current game state - Players: ${gameState.players.length}, Required: ${gameState.requiredPlayers}');
+      print('Current round: ${gameState.currentRound?.phase}');
+      print('Player names: ${gameState.players.map((p) => p.name).toList()}');
+      
+      // Check if game has already started
+      if (gameState.currentRound != null && gameState.currentRound!.phase != GamePhase.waiting) {
+        print('Join failed: Game already started');
+        return const Left(GameAlreadyStartedFailure());
+      }
+      
+      // Check if player with same name already exists
+      final existingPlayer = gameState.players.where((p) => p.name.toLowerCase() == playerName.toLowerCase());
+      if (existingPlayer.isNotEmpty) {
+        print('Join failed: Duplicate player name');
+        return const Left(DuplicatePlayerFailure());
+      }
+      
+      // Check if room is full
+      if (gameState.players.length >= gameState.requiredPlayers) {
+        print('Join failed: Room is full (${gameState.players.length}/${gameState.requiredPlayers})');
+        return const Left(GameFullFailure());
+      }
+
+      final playerId = const Uuid().v4();
+
+      final newPlayer = Player(
+        id: playerId,
+        name: playerName,
+        isHost: false,
+      );
+
+      final updatedPlayers = [...gameState.players, newPlayer];
+      final updatedGame = gameState.copyWith(players: updatedPlayers);
+
+      print('Updating Firebase with new player: $playerName');
+      // Update Firebase
+      await _database.child('games').child(gameId).set(_gameStateToJson(updatedGame));
+
+      print('Join successful: ${playerName} joined game ${gameId}');
       return Right(updatedGame);
-    } catch (e) {
-      return const Left(ServerFailure(message: 'Failed to join game'));
+    } catch (e, stackTrace) {
+      print('Join exception: $e');
+      print('Stack trace: $stackTrace');
+      return Left(ServerFailure(message: 'Failed to join game: $e'));
     }
   }
 
@@ -194,107 +181,72 @@ class FirebaseGameRepository implements GameRepository {
     int bid,
   ) async {
     try {
-      // Use transaction to prevent race conditions
-      final transactionResult = await _database.child('games').child(gameId).runTransaction((currentData) {
-        if (currentData == null) {
-          return Transaction.abort();
-        }
-
-        final game = _gameStateFromJson(currentData as Map, gameId);
-
-        if (game.currentRound == null) {
-          return Transaction.abort();
-        }
-        
-        // Check if game is in bidding phase
-        if (game.currentRound!.phase != GamePhase.bidding) {
-          return Transaction.abort();
-        }
-        
-        // Check if it's the player's turn
-        final currentPlayer = game.players[game.currentRound!.currentPlayerIndex];
-        if (currentPlayer.id != playerId) {
-          return Transaction.abort();
-        }
-        
-        // Check if player has already bid
-        if (currentPlayer.hasBid) {
-          return Transaction.abort();
-        }
-        
-        // Validate bid
-        if (!game.canBid(bid)) {
-          return Transaction.abort();
-        }
-
-        // Update player's bid
-        final updatedPlayers = game.players.map((player) {
-          if (player.id == playerId) {
-            return player.copyWith(bid: bid);
-          }
-          return player;
-        }).toList();
-
-        var updatedGame = game.copyWith(players: updatedPlayers);
-
-        // Check if all players have bid
-        final allBid = updatedPlayers.every((p) => p.bid != null);
-        if (allBid) {
-          // Move to playing phase
-          final updatedRound = game.currentRound!.copyWith(
-            phase: GamePhase.playing,
-          );
-          updatedGame = updatedGame.copyWith(currentRound: updatedRound);
-        } else {
-          // Move to next player
-          final nextPlayerIndex = (game.currentRound!.currentPlayerIndex + 1) % game.players.length;
-          final updatedRound = game.currentRound!.copyWith(
-            currentPlayerIndex: nextPlayerIndex,
-          );
-          updatedGame = updatedGame.copyWith(currentRound: updatedRound);
-        }
-
-        return Transaction.success(_gameStateToJson(updatedGame));
-      });
-
-      if (!transactionResult.committed) {
-        // Check specific failure reason by re-reading the data
-        final snapshot = await _database.child('games').child(gameId).get();
-        
-        if (!snapshot.exists) {
-          return const Left(ServerFailure(message: 'Game not found'));
-        }
-
-        final game = _gameStateFromJson(snapshot.value as Map, gameId);
-
-        if (game.currentRound == null) {
-          return const Left(InvalidBidFailure());
-        }
-        
-        if (game.currentRound!.phase != GamePhase.bidding) {
-          return const Left(InvalidBidFailure());
-        }
-        
-        final currentPlayer = game.players[game.currentRound!.currentPlayerIndex];
-        if (currentPlayer.id != playerId) {
-          return const Left(NotYourTurnFailure());
-        }
-        
-        if (currentPlayer.hasBid) {
-          return const Left(InvalidBidFailure());
-        }
-        
-        if (!game.canBid(bid)) {
-          return const Left(InvalidBidFailure());
-        }
-        
-        return const Left(ServerFailure(message: 'Failed to place bid'));
+      final snapshot = await _database.child('games').child(gameId).get();
+      
+      if (!snapshot.exists) {
+        return Left(ServerFailure());
       }
 
-      final updatedGame = _gameStateFromJson(transactionResult.snapshot.value as Map, gameId);
+      final game = _gameStateFromJson(snapshot.value as Map, gameId);
+
+      if (game.currentRound == null) {
+        return Left(ServerFailure());
+      }
+      
+      // Check if game is in bidding phase
+      if (game.currentRound!.phase != GamePhase.bidding) {
+        return const Left(InvalidBidFailure());
+      }
+      
+      // Check if it's the player's turn
+      final currentPlayer = game.players[game.currentRound!.currentPlayerIndex];
+      if (currentPlayer.id != playerId) {
+        return const Left(NotYourTurnFailure());
+      }
+      
+      // Check if player has already bid
+      if (currentPlayer.hasBid) {
+        return const Left(InvalidBidFailure());
+      }
+      
+      // Validate bid
+      if (!game.canBid(bid)) {
+        return const Left(InvalidBidFailure());
+      }
+
+      // Update player's bid
+      final updatedPlayers = game.players.map((player) {
+        if (player.id == playerId) {
+          return player.copyWith(bid: bid);
+        }
+        return player;
+      }).toList();
+
+      var updatedGame = game.copyWith(players: updatedPlayers);
+
+      // Check if all players have bid
+      final allBid = updatedPlayers.every((p) => p.bid != null);
+      if (allBid) {
+        // Move to playing phase
+        final updatedRound = game.currentRound!.copyWith(
+          phase: GamePhase.playing,
+        );
+        updatedGame = updatedGame.copyWith(currentRound: updatedRound);
+      } else {
+        // Move to next player
+        final nextPlayerIndex = (game.currentRound!.currentPlayerIndex + 1) % game.players.length;
+        final updatedRound = game.currentRound!.copyWith(
+          currentPlayerIndex: nextPlayerIndex,
+        );
+        updatedGame = updatedGame.copyWith(currentRound: updatedRound);
+      }
+
+      // Update Firebase
+      await _database.child('games').child(gameId).set(_gameStateToJson(updatedGame));
+
       return Right(updatedGame);
     } catch (e) {
-      return const Left(ServerFailure(message: 'Failed to place bid'));
+      return Left(ServerFailure());
     }
   }
 
