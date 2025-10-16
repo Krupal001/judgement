@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "558684784283",
+    "firebase_url": "https://judgement-2fdfa-default-rtdb.firebaseio.com",
+    "project_id": "judgement-2fdfa",
+    "storage_bucket": "judgement-2fdfa.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:558684784283:android:a13586b3dfe60a1f04e83e",
+        "android_client_info": {
+          "package_name": "com.example.judgement"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBDPrBgrTez2CeMt-x6Pyc6PWR8XYMIOQQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
