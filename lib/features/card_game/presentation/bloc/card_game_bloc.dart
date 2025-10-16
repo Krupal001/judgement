@@ -81,7 +81,7 @@ class CardGameBloc extends Bloc<CardGameEvent, CardGameBlocState> {
     final result = await repository.joinGame(event.gameId, event.playerName);
 
     result.fold(
-      (failure) => emit(const CardGameError(message: 'Failed to join game')),
+      (failure) => emit(CardGameError(message: failure.message ?? 'Failed to join game')),
       (gameState) {
         final player = gameState.players.lastWhere((p) => p.name == event.playerName);
         _startListening(gameState.gameId, player.id);
@@ -105,7 +105,7 @@ class CardGameBloc extends Bloc<CardGameEvent, CardGameBlocState> {
     final result = await repository.startGame(currentState.gameState.gameId);
 
     result.fold(
-      (failure) => emit(const CardGameError(message: 'Failed to start game')),
+      (failure) => emit(CardGameError(message: failure.message ?? 'Failed to start game')),
       (gameState) => emit(CardGameLoaded(
         gameState: gameState,
         currentPlayerId: currentState.currentPlayerId,
@@ -128,7 +128,7 @@ class CardGameBloc extends Bloc<CardGameEvent, CardGameBlocState> {
     );
 
     result.fold(
-      (failure) => emit(const CardGameError(message: 'Invalid bid')),
+      (failure) => emit(CardGameError(message: failure.message ?? 'Invalid bid')),
       (gameState) => emit(CardGameLoaded(
         gameState: gameState,
         currentPlayerId: currentState.currentPlayerId,
