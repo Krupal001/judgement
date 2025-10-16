@@ -81,6 +81,18 @@ class _GameTablePageState extends State<GameTablePage> {
                 print('❌ Not showing dialog');
               }
 
+              // Check if round just completed and show winner
+              if (round.phase == GamePhase.bidding && 
+                  currentPlayer.hand.isNotEmpty && 
+                  game.players.every((p) => p.bid == null)) {
+                // Round just started, check if we should show previous round winner
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted && round.roundNumber > 0) {
+                    _showRoundWinner(context, game);
+                  }
+                });
+              }
+
               return Column(
                 children: [
                   _buildGameInfo(round, game),
@@ -391,6 +403,96 @@ class _GameTablePageState extends State<GameTablePage> {
             ),
           ],
         ],
+      ),
+    );
+  }
+
+  void _showRoundWinner(BuildContext context, game) {
+    // Find the player with highest score
+    final sortedPlayers = List.from(game.players)
+      ..sort((a, b) => b.totalScore.compareTo(a.totalScore));
+    final leader = sortedPlayers.first;
+    
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.amber.shade700, Colors.orange.shade600],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.3),
+                blurRadius: 20,
+                spreadRadius: 5,
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.emoji_events, size: 80, color: Colors.white),
+              const SizedBox(height: 16),
+              Text(
+                'Round ${game.currentRound!.roundNumber} Complete!',
+                style: GoogleFonts.poppins(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'Current Leader',
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  color: Colors.white70,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                leader.name,
+                style: GoogleFonts.poppins(
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              Text(
+                '${leader.totalScore} points',
+                style: GoogleFonts.poppins(
+                  fontSize: 20,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(dialogContext);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: Colors.orange.shade700,
+                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                ),
+                child: Text(
+                  'Continue',
+                  style: GoogleFonts.poppins(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

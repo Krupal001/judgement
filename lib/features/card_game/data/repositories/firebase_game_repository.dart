@@ -360,7 +360,7 @@ class FirebaseGameRepository implements GameRepository {
             return player.copyWith(
               totalScore: player.totalScore + roundScore,
               tricksWon: 0,
-              bid: null,
+              resetBid: true,  // Use flag to reset bid to null
             );
           }).toList();
           
