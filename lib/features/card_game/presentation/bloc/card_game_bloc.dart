@@ -32,10 +32,14 @@ class CardGameBloc extends Bloc<CardGameEvent, CardGameBlocState> {
   void _startListening(String gameId, String currentPlayerId) {
     _gameSubscription?.cancel();
     
+    print('Starting Firebase listener for game: $gameId, player: $currentPlayerId');
+    
     if (repository is FirebaseGameRepository) {
       _gameSubscription = (repository as FirebaseGameRepository)
           .watchGameState(gameId)
           .listen((gameState) {
+        print('Firebase update received - Phase: ${gameState.currentRound?.phase}, CurrentPlayerIndex: ${gameState.currentRound?.currentPlayerIndex}');
+        print('Players: ${gameState.players.map((p) => '${p.name}(bid: ${p.bid})').toList()}');
         add(GameStateUpdatedEvent(gameState: gameState, currentPlayerId: currentPlayerId));
       });
     }
@@ -45,6 +49,7 @@ class CardGameBloc extends Bloc<CardGameEvent, CardGameBlocState> {
     GameStateUpdatedEvent event,
     Emitter<CardGameBlocState> emit,
   ) {
+    print('Emitting updated game state');
     emit(CardGameLoaded(
       gameState: event.gameState,
       currentPlayerId: event.currentPlayerId,
@@ -128,11 +133,15 @@ class CardGameBloc extends Bloc<CardGameEvent, CardGameBlocState> {
     );
 
     result.fold(
-      (failure) => emit(CardGameError(message: failure.message ?? 'Invalid bid')),
-      (gameState) => emit(CardGameLoaded(
-        gameState: gameState,
-        currentPlayerId: currentState.currentPlayerId,
-      )),
+      (failure) {
+        print('PlaceBid failed in BLoC: ${failure.message}');
+        emit(CardGameError(message: failure.message ?? 'Invalid bid'));
+      },
+      (gameState) {
+        print('PlaceBid succeeded in BLoC - Firebase listener will update state');
+        // Don't emit state here - let the Firebase listener handle it
+        // This prevents race conditions and ensures both players get the update
+      },
     );
   }
 
