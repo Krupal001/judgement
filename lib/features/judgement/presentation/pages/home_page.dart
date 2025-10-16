@@ -350,16 +350,18 @@ class _HomePageState extends State<HomePage> {
       return;
     }
 
+    // Create BLoC instance that won't be auto-disposed
+    final gameBloc = sl<CardGameBloc>()
+      ..add(CreateGameEvent(
+        hostName: _nameController.text.trim(),
+        playerCount: _selectedPlayerCount,
+      ));
+
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => BlocProvider(
-          create: (_) => sl<CardGameBloc>()
-            ..add(CreateGameEvent(
-              hostName: _nameController.text.trim(),
-              playerCount: _selectedPlayerCount,
-            )),
-          lazy: false,  // Create BLoC immediately
+        builder: (context) => BlocProvider.value(
+          value: gameBloc,
           child: const LobbyPage(),
         ),
       ),
@@ -377,15 +379,18 @@ class _HomePageState extends State<HomePage> {
       return;
     }
 
+    // Create BLoC instance that won't be auto-disposed
+    final gameBloc = sl<CardGameBloc>()
+      ..add(JoinGameEvent(
+        gameId: _gameIdController.text.trim().toUpperCase(),
+        playerName: _nameController.text.trim(),
+      ));
+
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => BlocProvider(
-          create: (_) => sl<CardGameBloc>()
-            ..add(JoinGameEvent(
-              gameId: _gameIdController.text.trim().toUpperCase(),
-              playerName: _nameController.text.trim(),
-            )),
+        builder: (context) => BlocProvider.value(
+          value: gameBloc,
           child: const LobbyPage(),
         ),
       ),
