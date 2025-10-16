@@ -181,36 +181,49 @@ class FirebaseGameRepository implements GameRepository {
     int bid,
   ) async {
     try {
+      print('PlaceBid called - GameId: $gameId, PlayerId: $playerId, Bid: $bid');
+      
       final snapshot = await _database.child('games').child(gameId).get();
       
       if (!snapshot.exists) {
+        print('PlaceBid failed: Game not found');
         return Left(ServerFailure());
       }
 
       final game = _gameStateFromJson(snapshot.value as Map, gameId);
 
       if (game.currentRound == null) {
+        print('PlaceBid failed: No current round');
         return Left(ServerFailure());
       }
       
+      print('Current player index: ${game.currentRound!.currentPlayerIndex}');
+      print('Players: ${game.players.map((p) => '${p.name}(${p.id.substring(0, 8)}, bid: ${p.bid})').toList()}');
+      
       // Check if game is in bidding phase
       if (game.currentRound!.phase != GamePhase.bidding) {
+        print('PlaceBid failed: Not in bidding phase');
         return const Left(InvalidBidFailure());
       }
       
       // Check if it's the player's turn
       final currentPlayer = game.players[game.currentRound!.currentPlayerIndex];
+      print('Current player: ${currentPlayer.name} (${currentPlayer.id.substring(0, 8)})');
+      
       if (currentPlayer.id != playerId) {
+        print('PlaceBid failed: Not player\'s turn');
         return const Left(NotYourTurnFailure());
       }
       
       // Check if player has already bid
       if (currentPlayer.hasBid) {
+        print('PlaceBid failed: Player already bid');
         return const Left(InvalidBidFailure());
       }
       
       // Validate bid
       if (!game.canBid(bid)) {
+        print('PlaceBid failed: Invalid bid value');
         return const Left(InvalidBidFailure());
       }
 
@@ -226,8 +239,11 @@ class FirebaseGameRepository implements GameRepository {
 
       // Check if all players have bid
       final allBid = updatedPlayers.every((p) => p.bid != null);
+      print('All players bid: $allBid');
+      
       if (allBid) {
         // Move to playing phase
+        print('Moving to playing phase');
         final updatedRound = game.currentRound!.copyWith(
           phase: GamePhase.playing,
         );
@@ -235,6 +251,7 @@ class FirebaseGameRepository implements GameRepository {
       } else {
         // Move to next player
         final nextPlayerIndex = (game.currentRound!.currentPlayerIndex + 1) % game.players.length;
+        print('Moving to next player: index $nextPlayerIndex');
         final updatedRound = game.currentRound!.copyWith(
           currentPlayerIndex: nextPlayerIndex,
         );
@@ -244,8 +261,11 @@ class FirebaseGameRepository implements GameRepository {
       // Update Firebase
       await _database.child('games').child(gameId).set(_gameStateToJson(updatedGame));
 
+      print('PlaceBid successful');
       return Right(updatedGame);
-    } catch (e) {
+    } catch (e, stackTrace) {
+      print('PlaceBid exception: $e');
+      print('Stack trace: $stackTrace');
       return Left(ServerFailure());
     }
   }

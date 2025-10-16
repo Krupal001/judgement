@@ -6,8 +6,15 @@ import '../../domain/entities/game_round.dart';
 import '../widgets/playing_card_widget.dart';
 import '../widgets/bid_dialog.dart';
 
-class GameTablePage extends StatelessWidget {
+class GameTablePage extends StatefulWidget {
   const GameTablePage({super.key});
+
+  @override
+  State<GameTablePage> createState() => _GameTablePageState();
+}
+
+class _GameTablePageState extends State<GameTablePage> {
+  bool _isBidDialogShowing = false;
 
   @override
   Widget build(BuildContext context) {
@@ -40,13 +47,30 @@ class GameTablePage extends StatelessWidget {
               final currentPlayer = game.getPlayerById(state.currentPlayerId);
               if (currentPlayer == null) return const SizedBox();
 
+              print('GameTablePage - Phase: ${round.phase}, CurrentPlayer: ${game.currentPlayer?.name}, MyPlayer: ${currentPlayer.name}, MyBid: ${currentPlayer.bid}, DialogShowing: $_isBidDialogShowing');
+              
               // Show bid dialog if it's player's turn to bid
               if (round.phase == GamePhase.bidding &&
                   game.currentPlayer?.id == currentPlayer.id &&
-                  !currentPlayer.hasBid) {
+                  !currentPlayer.hasBid &&
+                  !_isBidDialogShowing) {
+                print('Should show bid dialog for ${currentPlayer.name}');
                 WidgetsBinding.instance.addPostFrameCallback((_) {
-                  _showBidDialog(context, game, currentPlayer.id);
+                  if (!_isBidDialogShowing) {
+                    print('Showing bid dialog for ${currentPlayer.name}');
+                    _showBidDialog(context, game, currentPlayer.id);
+                  }
                 });
+              }
+              
+              // Reset dialog flag when it's not the player's turn or they've already bid
+              if (round.phase != GamePhase.bidding ||
+                  game.currentPlayer?.id != currentPlayer.id ||
+                  currentPlayer.hasBid) {
+                if (_isBidDialogShowing) {
+                  print('Resetting dialog flag');
+                }
+                _isBidDialogShowing = false;
               }
 
               return Column(
@@ -364,6 +388,10 @@ class GameTablePage extends StatelessWidget {
   }
 
   void _showBidDialog(BuildContext context, game, String playerId) {
+    setState(() {
+      _isBidDialogShowing = true;
+    });
+    
     // Capture the BLoC before showing the dialog
     final bloc = context.read<CardGameBloc>();
     
@@ -380,7 +408,14 @@ class GameTablePage extends StatelessWidget {
         },
         canBid: (bid) => game.canBid(bid),
       ),
-    );
+    ).then((_) {
+      // Reset flag when dialog is dismissed
+      if (mounted) {
+        setState(() {
+          _isBidDialogShowing = false;
+        });
+      }
+    });
   }
 
   String _getTrumpSymbol(suit) {
