@@ -23,16 +23,15 @@ class CardGameState extends Equatable {
     required String gameId,
     required int playerCount,
   }) {
-    // Calculate starting cards based on player count
-    // For demo purposes, allow 1 player with 7 cards
-    final startingCards = playerCount == 1 ? 7 : (playerCount <= 6 ? 7 : (52 ~/ playerCount));
+    // Start with 1 card and go up to 10 cards over 10 rounds
+    final startingCards = 1;
     
     return CardGameState(
       gameId: gameId,
       players: [],
       currentRound: null,
       startingCards: startingCards,
-      isAscending: false,
+      isAscending: true, // Always ascending from 1 to 10
       requiredPlayers: playerCount,
     );
   }

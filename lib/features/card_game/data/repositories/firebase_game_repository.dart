@@ -289,6 +289,24 @@ class FirebaseGameRepository implements GameRepository {
         return Left(ServerFailure());
       }
 
+      // Get the player
+      final player = game.players.firstWhere((p) => p.id == playerId);
+      
+      // Validate must-follow-suit rule
+      if (game.currentRound!.currentTrick.isNotEmpty) {
+        // Get the suit of the first card played in this trick
+        final leadSuit = game.currentRound!.currentTrick.first.card.suit;
+        
+        // Check if player has cards of the lead suit
+        final hasLeadSuit = player.hand.any((c) => c.suit == leadSuit);
+        
+        // If player has lead suit cards but played a different suit, reject
+        if (hasLeadSuit && card.suit != leadSuit) {
+          print('Invalid play: Must follow suit $leadSuit');
+          return const Left(ServerFailure(message: 'You must follow suit!'));
+        }
+      }
+
       // Remove card from player's hand
       final updatedPlayers = game.players.map((player) {
         if (player.id == playerId) {
@@ -367,18 +385,17 @@ class FirebaseGameRepository implements GameRepository {
 
   GameRound _completeRound(CardGameState game, List<Player> players) {
     final currentCards = game.currentRound!.cardsPerPlayer;
-    int nextCards;
-
-    if (currentCards == 1) {
-      nextCards = 2;
-    } else if (game.isAscending) {
-      nextCards = currentCards + 1;
-      if (nextCards > game.startingCards) {
-        return game.currentRound!.copyWith(phase: GamePhase.gameComplete);
-      }
-    } else {
-      nextCards = currentCards - 1;
+    
+    // Game goes from 1 to 10 cards over 10 rounds
+    final nextCards = currentCards + 1;
+    
+    // Check if game is complete (after 10 rounds)
+    if (nextCards > 10) {
+      print('Game complete after 10 rounds!');
+      return game.currentRound!.copyWith(phase: GamePhase.gameComplete);
     }
+
+    print('Starting round ${game.currentRound!.roundNumber + 1} with $nextCards cards');
 
     // Deal new cards for next round
     final hands = gameLogic.dealCards(

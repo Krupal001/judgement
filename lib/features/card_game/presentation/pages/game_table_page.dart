@@ -47,29 +47,38 @@ class _GameTablePageState extends State<GameTablePage> {
               final currentPlayer = game.getPlayerById(state.currentPlayerId);
               if (currentPlayer == null) return const SizedBox();
 
-              print('GameTablePage - Phase: ${round.phase}, CurrentPlayer: ${game.currentPlayer?.name}, MyPlayer: ${currentPlayer.name}, MyBid: ${currentPlayer.bid}, LastDialogPlayer: $_lastBidDialogPlayerId');
+              print('GameTablePage - Round: ${round.roundNumber}, Phase: ${round.phase}, CurrentPlayer: ${game.currentPlayer?.name}, MyPlayer: ${currentPlayer.name}, MyBid: ${currentPlayer.bid}, LastDialogKey: $_lastBidDialogPlayerId');
               
               // Create a unique key for this bid opportunity (round + player + turn)
               final bidKey = '${round.roundNumber}_${currentPlayer.id}_${game.currentPlayer?.id}';
+              print('Current bidKey: $bidKey');
               
               // Show bid dialog if it's player's turn to bid and we haven't shown it yet
+              final isMyTurn = game.currentPlayer?.id == currentPlayer.id;
+              final hasNotBid = !currentPlayer.hasBid;
+              final isNewKey = _lastBidDialogPlayerId != bidKey;
+              
+              print('Dialog check - Phase: ${round.phase}, MyTurn: $isMyTurn, HasNotBid: $hasNotBid, IsNewKey: $isNewKey');
+              
               final shouldShowDialog = round.phase == GamePhase.bidding &&
-                  game.currentPlayer?.id == currentPlayer.id &&
-                  !currentPlayer.hasBid &&
-                  _lastBidDialogPlayerId != bidKey;
+                  isMyTurn &&
+                  hasNotBid &&
+                  isNewKey;
               
               if (shouldShowDialog) {
-                print('Should show bid dialog for ${currentPlayer.name} with key: $bidKey');
+                print('✅ Should show bid dialog for ${currentPlayer.name} with key: $bidKey');
                 // Set the key immediately to prevent multiple shows
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   if (mounted && _lastBidDialogPlayerId != bidKey) {
                     setState(() {
                       _lastBidDialogPlayerId = bidKey;
                     });
-                    print('Showing bid dialog for ${currentPlayer.name}');
+                    print('✅ Showing bid dialog for ${currentPlayer.name}');
                     _showBidDialog(context, game, currentPlayer.id);
                   }
                 });
+              } else {
+                print('❌ Not showing dialog');
               }
 
               return Column(
