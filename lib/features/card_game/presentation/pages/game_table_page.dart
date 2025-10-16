@@ -61,15 +61,15 @@ class _GameTablePageState extends State<GameTablePage> {
               if (shouldShowDialog) {
                 print('Should show bid dialog for ${currentPlayer.name} with key: $bidKey');
                 // Set the key immediately to prevent multiple shows
-                if (_lastBidDialogPlayerId != bidKey) {
-                  _lastBidDialogPlayerId = bidKey;
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    if (mounted) {
-                      print('Showing bid dialog for ${currentPlayer.name}');
-                      _showBidDialog(context, game, currentPlayer.id);
-                    }
-                  });
-                }
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted && _lastBidDialogPlayerId != bidKey) {
+                    setState(() {
+                      _lastBidDialogPlayerId = bidKey;
+                    });
+                    print('Showing bid dialog for ${currentPlayer.name}');
+                    _showBidDialog(context, game, currentPlayer.id);
+                  }
+                });
               }
 
               return Column(
