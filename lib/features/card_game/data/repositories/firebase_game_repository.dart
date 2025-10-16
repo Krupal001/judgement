@@ -132,9 +132,11 @@ class FirebaseGameRepository implements GameRepository {
         return const Left(NotEnoughPlayersFailure());
       }
 
-      // Calculate starting cards
+      // Use the starting cards from game state (which is 1 for 10-round game)
       final playerCount = game.players.length;
-      final startingCards = playerCount <= 6 ? 7 : (52 ~/ playerCount);
+      final startingCards = game.startingCards; // This is 1 for our 10-round game
+
+      print('Starting game with $startingCards cards per player');
 
       // Deal cards
       final hands = gameLogic.dealCards(
@@ -162,7 +164,6 @@ class FirebaseGameRepository implements GameRepository {
       final updatedGame = game.copyWith(
         players: updatedPlayers,
         currentRound: firstRound,
-        startingCards: startingCards,
       );
 
       // Update Firebase
@@ -324,6 +325,8 @@ class FirebaseGameRepository implements GameRepository {
 
       // Check if trick is complete
       if (updatedTrick.length == game.players.length) {
+        print('Trick complete! ${updatedTrick.length} cards played');
+        
         // Determine winner
         final winnerId = gameLogic.determineTrickWinner(
           updatedTrick,
@@ -332,12 +335,19 @@ class FirebaseGameRepository implements GameRepository {
 
         // Update tricks won
         final winnerIndex = updatedPlayers.indexWhere((p) => p.id == winnerId);
+        print('Trick winner: ${updatedPlayers[winnerIndex].name}');
+        
         updatedPlayers[winnerIndex] = updatedPlayers[winnerIndex].copyWith(
           tricksWon: updatedPlayers[winnerIndex].tricksWon + 1,
         );
 
         // Check if round is complete
-        if (updatedPlayers[0].hand.isEmpty) {
+        final roundComplete = updatedPlayers[0].hand.isEmpty;
+        print('Round complete: $roundComplete (hand size: ${updatedPlayers[0].hand.length})');
+        
+        if (roundComplete) {
+          print('Calculating scores for round ${game.currentRound!.roundNumber}');
+          
           // Calculate scores for completed round
           final scoredPlayers = updatedPlayers.map((player) {
             final roundScore = gameLogic.calculateScore(
@@ -345,6 +355,8 @@ class FirebaseGameRepository implements GameRepository {
               player.tricksWon,
               game.currentRound!.scoringStrategy,
             );
+            print('${player.name}: Bid=${player.bid}, Won=${player.tricksWon}, RoundScore=$roundScore, TotalScore=${player.totalScore + roundScore}');
+            
             return player.copyWith(
               totalScore: player.totalScore + roundScore,
               tricksWon: 0,
@@ -356,6 +368,7 @@ class FirebaseGameRepository implements GameRepository {
           updatedRound = _completeRound(updatedGame, scoredPlayers);
         } else {
           // Start new trick
+          print('Starting new trick ${updatedRound.trickNumber + 1}');
           updatedRound = updatedRound.copyWith(
             currentTrick: [],
             currentPlayerIndex: winnerIndex,
