@@ -7,8 +7,8 @@ import 'features/card_game/presentation/bloc/card_game_bloc.dart';
 final sl = GetIt.instance;
 
 Future<void> init() async {
-  // Bloc
-  sl.registerFactory(
+  // Bloc - Changed to LazySingleton to prevent auto-disposal during navigation
+  sl.registerLazySingleton(
     () => CardGameBloc(repository: sl()),
   );
 
