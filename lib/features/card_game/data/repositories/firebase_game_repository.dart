@@ -416,10 +416,20 @@ class FirebaseGameRepository implements GameRepository {
       nextCards,
     );
 
-    // Update players with new hands
+    // Update players with new hands (players already have bid reset to null)
     final playersWithCards = players.map((player) {
       final hand = gameLogic.sortHand(hands[player.id] ?? []);
-      return player.copyWith(hand: hand);
+      // Don't use copyWith here as it will restore the old bid value
+      // Instead create a new player with the reset values preserved
+      return Player(
+        id: player.id,
+        name: player.name,
+        isHost: player.isHost,
+        hand: hand,
+        bid: null,  // Explicitly set to null for new round
+        tricksWon: 0,
+        totalScore: player.totalScore,  // Keep the updated score
+      );
     }).toList();
 
     // Update game state with new players
