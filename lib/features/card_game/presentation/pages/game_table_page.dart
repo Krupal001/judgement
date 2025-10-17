@@ -45,9 +45,10 @@ class _GameTablePageState extends State<GameTablePage> {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              Colors.green.shade900,
-              Colors.teal.shade800,
-              Colors.blue.shade900,
+              Color(0xFF1a1a2e),
+              Color(0xFF16213e),
+              Color(0xFF0f3460),
+              Color(0xFF533483),
             ],
           ),
         ),
@@ -207,29 +208,29 @@ class _GameTablePageState extends State<GameTablePage> {
         phaseDescription = game.currentPlayer != null 
             ? '${game.currentPlayer!.name} is placing bid...'
             : 'Waiting for bids...';
-        phaseColor = Colors.orange.shade400;
+        phaseColor = Color(0xFFf39c12);
         break;
       case GamePhase.playing:
         phaseText = 'PLAYING PHASE';
         phaseDescription = game.currentPlayer != null
             ? '${game.currentPlayer!.name}\'s turn to play'
             : 'Game in progress...';
-        phaseColor = Colors.green.shade400;
+        phaseColor = Color(0xFF00d9ff);
         break;
       case GamePhase.roundComplete:
         phaseText = 'ROUND COMPLETE';
         phaseDescription = 'Calculating scores...';
-        phaseColor = Colors.blue.shade400;
+        phaseColor = Color(0xFF9b59b6);
         break;
       case GamePhase.gameComplete:
         phaseText = 'GAME COMPLETE';
         phaseDescription = 'Final results!';
-        phaseColor = Colors.purple.shade400;
+        phaseColor = Color(0xFFe94560);
         break;
       default:
         phaseText = 'WAITING';
         phaseDescription = 'Waiting for players...';
-        phaseColor = Colors.grey.shade400;
+        phaseColor = Color(0xFF95a5a6);
     }
 
     // Calculate total rounds (1 to 5 cards)
@@ -239,10 +240,21 @@ class _GameTablePageState extends State<GameTablePage> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.3),
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Colors.black.withValues(alpha: 0.5),
+            Colors.black.withValues(alpha: 0.3),
+          ],
+        ),
         borderRadius: const BorderRadius.only(
           bottomLeft: Radius.circular(20),
           bottomRight: Radius.circular(20),
+        ),
+        border: Border.all(
+          color: Color(0xFFe94560).withValues(alpha: 0.3),
+          width: 2,
         ),
       ),
       child: Column(
@@ -251,12 +263,12 @@ class _GameTablePageState extends State<GameTablePage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.casino, color: Colors.amber.shade400, size: 20),
+              Icon(Icons.casino, color: Color(0xFFf39c12), size: 20),
               const SizedBox(width: 8),
               Text(
                 'Round $currentRoundNumber of $totalRounds',
                 style: GoogleFonts.orbitron(
-                  color: Colors.white,
+                  color: Color(0xFFf39c12),
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1,
@@ -268,9 +280,21 @@ class _GameTablePageState extends State<GameTablePage> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
-              color: phaseColor.withValues(alpha: 0.3),
+              gradient: LinearGradient(
+                colors: [
+                  phaseColor.withValues(alpha: 0.4),
+                  phaseColor.withValues(alpha: 0.2),
+                ],
+              ),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: phaseColor, width: 2),
+              boxShadow: [
+                BoxShadow(
+                  color: phaseColor.withValues(alpha: 0.3),
+                  blurRadius: 8,
+                  spreadRadius: 1,
+                ),
+              ],
             ),
             child: Column(
               children: [
@@ -314,13 +338,22 @@ class _GameTablePageState extends State<GameTablePage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.2),
+        gradient: LinearGradient(
+          colors: [
+            Color(0xFFe94560).withValues(alpha: 0.3),
+            Color(0xFF9b59b6).withValues(alpha: 0.3),
+          ],
+        ),
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.3),
+          width: 1,
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: Colors.amber.shade400, size: 18),
+          Icon(icon, color: Color(0xFFf39c12), size: 18),
           const SizedBox(width: 6),
           Text(
             text,
@@ -351,14 +384,33 @@ class _GameTablePageState extends State<GameTablePage> {
               return Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: isActive
-                      ? Colors.amber.shade400.withValues(alpha: 0.3)
-                      : Colors.white.withValues(alpha: 0.1),
+                  gradient: isActive
+                      ? LinearGradient(
+                          colors: [
+                            Color(0xFFf39c12).withValues(alpha: 0.4),
+                            Color(0xFFe94560).withValues(alpha: 0.3),
+                          ],
+                        )
+                      : LinearGradient(
+                          colors: [
+                            Colors.white.withValues(alpha: 0.15),
+                            Colors.white.withValues(alpha: 0.05),
+                          ],
+                        ),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: isActive ? Colors.amber.shade400 : Colors.white.withValues(alpha: 0.3),
+                    color: isActive ? Color(0xFFf39c12) : Colors.white.withValues(alpha: 0.3),
                     width: 2,
                   ),
+                  boxShadow: isActive
+                      ? [
+                          BoxShadow(
+                            color: Color(0xFFf39c12).withValues(alpha: 0.4),
+                            blurRadius: 12,
+                            spreadRadius: 2,
+                          ),
+                        ]
+                      : null,
                 ),
                 child: Column(
                   children: [
@@ -381,7 +433,7 @@ class _GameTablePageState extends State<GameTablePage> {
                     Text(
                       'Score: ${player.totalScore}',
                       style: GoogleFonts.poppins(
-                        color: Colors.amber.shade400,
+                        color: Color(0xFFf39c12),
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
                       ),
@@ -458,10 +510,21 @@ class _GameTablePageState extends State<GameTablePage> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.3),
+        gradient: LinearGradient(
+          begin: Alignment.bottomCenter,
+          end: Alignment.topCenter,
+          colors: [
+            Colors.black.withValues(alpha: 0.5),
+            Colors.black.withValues(alpha: 0.3),
+          ],
+        ),
         borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(20),
           topRight: Radius.circular(20),
+        ),
+        border: Border.all(
+          color: Color(0xFF00d9ff).withValues(alpha: 0.3),
+          width: 2,
         ),
       ),
       child: Column(
@@ -483,8 +546,20 @@ class _GameTablePageState extends State<GameTablePage> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                   decoration: BoxDecoration(
-                    color: Colors.green.shade400,
+                    gradient: LinearGradient(
+                      colors: [
+                        Color(0xFF00d9ff),
+                        Color(0xFF0abde3),
+                      ],
+                    ),
                     borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Color(0xFF00d9ff).withValues(alpha: 0.5),
+                        blurRadius: 8,
+                        spreadRadius: 1,
+                      ),
+                    ],
                   ),
                   child: Text(
                     'YOUR TURN',
@@ -551,7 +626,7 @@ class _GameTablePageState extends State<GameTablePage> {
             Text(
               'Waiting for all bids...',
               style: GoogleFonts.poppins(
-                color: Colors.orange.shade300,
+                color: Color(0xFFf39c12),
                 fontSize: 12,
               ),
             ),
@@ -560,7 +635,7 @@ class _GameTablePageState extends State<GameTablePage> {
             Text(
               'Waiting for other players...',
               style: GoogleFonts.poppins(
-                color: Colors.blue.shade300,
+                color: Color(0xFF00d9ff),
                 fontSize: 12,
               ),
             ),
@@ -569,7 +644,7 @@ class _GameTablePageState extends State<GameTablePage> {
             Text(
               'You must follow suit if possible',
               style: GoogleFonts.poppins(
-                color: Colors.yellow.shade300,
+                color: Color(0xFFf39c12),
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
               ),
