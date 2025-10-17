@@ -230,8 +230,8 @@ class _GameTablePageState extends State<GameTablePage> {
         phaseColor = Colors.grey.shade400;
     }
 
-    // Calculate total rounds (1 to 10 cards)
-    final totalRounds = 10;
+    // Calculate total rounds (1 to 5 cards)
+    final totalRounds = 5;
     final currentRoundNumber = round.roundNumber + 1;
 
     return Container(

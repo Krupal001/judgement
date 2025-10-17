@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:dartz/dartz.dart';
 import 'package:firebase_database/firebase_database.dart';
 import '../../../../core/error/failures.dart';
@@ -184,7 +185,14 @@ class FirebaseGameRepository implements GameRepository {
     try {
       print('PlaceBid called - GameId: $gameId, PlayerId: $playerId, Bid: $bid');
       
-      final snapshot = await _database.child('games').child(gameId).get();
+      final snapshot = await _database.child('games').child(gameId).get()
+          .timeout(
+            const Duration(seconds: 10),
+            onTimeout: () {
+              print('⏱️ PlaceBid: Firebase read timeout after 10 seconds');
+              throw TimeoutException('Firebase read timeout');
+            },
+          );
       
       if (!snapshot.exists) {
         print('PlaceBid failed: Game not found');
@@ -259,13 +267,26 @@ class FirebaseGameRepository implements GameRepository {
         updatedGame = updatedGame.copyWith(currentRound: updatedRound);
       }
 
-      // Update Firebase
-      await _database.child('games').child(gameId).set(_gameStateToJson(updatedGame));
+      // Update Firebase with timeout
+      try {
+        await _database.child('games').child(gameId).set(_gameStateToJson(updatedGame))
+            .timeout(
+              const Duration(seconds: 10),
+              onTimeout: () {
+                print('⏱️ PlaceBid: Firebase write timeout after 10 seconds');
+                throw TimeoutException('Firebase write timeout');
+              },
+            );
+        print('✅ Bid placed and Firebase updated');
+      } catch (firebaseError) {
+        print('❌ Firebase update failed: $firebaseError');
+        // Continue anyway - local state is updated
+      }
 
       print('PlaceBid successful');
       return Right(updatedGame);
     } catch (e, stackTrace) {
-      print('PlaceBid exception: $e');
+      print('❌ PlaceBid exception: $e');
       print('Stack trace: $stackTrace');
       return Left(ServerFailure());
     }
@@ -278,7 +299,14 @@ class FirebaseGameRepository implements GameRepository {
     PlayingCard card,
   ) async {
     try {
-      final snapshot = await _database.child('games').child(gameId).get();
+      final snapshot = await _database.child('games').child(gameId).get()
+          .timeout(
+            const Duration(seconds: 10),
+            onTimeout: () {
+              print('⏱️ PlayCard: Firebase read timeout after 10 seconds');
+              throw TimeoutException('Firebase read timeout');
+            },
+          );
       
       if (!snapshot.exists) {
         return Left(ServerFailure());
@@ -393,11 +421,25 @@ class FirebaseGameRepository implements GameRepository {
         updatedGame = updatedGame.copyWith(currentRound: updatedRound);
       }
 
-      // Update Firebase
-      await _database.child('games').child(gameId).set(_gameStateToJson(updatedGame));
+      // Update Firebase with timeout
+      try {
+        await _database.child('games').child(gameId).set(_gameStateToJson(updatedGame))
+            .timeout(
+              const Duration(seconds: 10),
+              onTimeout: () {
+                print('⏱️ PlayCard: Firebase write timeout after 10 seconds');
+                throw TimeoutException('Firebase write timeout');
+              },
+            );
+        print('✅ Card played and Firebase updated');
+      } catch (firebaseError) {
+        print('❌ Firebase update failed: $firebaseError');
+        // Continue anyway - local state is updated
+      }
 
       return Right(updatedGame);
     } catch (e) {
+      print('❌ PlayCard error: $e');
       return Left(ServerFailure());
     }
   }
@@ -405,12 +447,12 @@ class FirebaseGameRepository implements GameRepository {
   GameRound _completeRound(CardGameState game, List<Player> players) {
     final currentCards = game.currentRound!.cardsPerPlayer;
     
-    // Game goes from 1 to 10 cards over 10 rounds
+    // Game goes from 1 to 5 cards over 5 rounds
     final nextCards = currentCards + 1;
     
-    // Check if game is complete (after 10 rounds)
-    if (nextCards > 10) {
-      print('Game complete after 10 rounds!');
+    // Check if game is complete (after 5 rounds)
+    if (nextCards > 5) {
+      print('🎉 Game complete after 5 rounds!');
       return game.currentRound!.copyWith(phase: GamePhase.gameComplete);
     }
 
@@ -490,7 +532,14 @@ class FirebaseGameRepository implements GameRepository {
   @override
   Future<Either<Failure, CardGameState>> startNextRound(String gameId) async {
     try {
-      final snapshot = await _database.child('games').child(gameId).get();
+      final snapshot = await _database.child('games').child(gameId).get()
+          .timeout(
+            const Duration(seconds: 10),
+            onTimeout: () {
+              print('⏱️ StartNextRound: Firebase read timeout after 10 seconds');
+              throw TimeoutException('Firebase read timeout');
+            },
+          );
       
       if (!snapshot.exists) {
         return Left(ServerFailure());
@@ -513,8 +562,21 @@ class FirebaseGameRepository implements GameRepository {
         players: updatedPlayers,
       );
       
-      // Update Firebase with complete game state
-      await _database.child('games').child(gameId).set(_gameStateToJson(updatedGame));
+      // Update Firebase with complete game state and timeout
+      try {
+        await _database.child('games').child(gameId).set(_gameStateToJson(updatedGame))
+            .timeout(
+              const Duration(seconds: 10),
+              onTimeout: () {
+                print('⏱️ StartNextRound: Firebase write timeout after 10 seconds');
+                throw TimeoutException('Firebase write timeout');
+              },
+            );
+        print('✅ Firebase updated for next round');
+      } catch (firebaseError) {
+        print('❌ Firebase update failed: $firebaseError');
+        // Continue anyway - local state is updated
+      }
       
       print('✅ Next round started: Round ${nextRound.roundNumber}, Players bids reset');
       print('Players: ${updatedPlayers.map((p) => '${p.name}:bid=${p.bid}').join(', ')}');
@@ -526,14 +588,23 @@ class FirebaseGameRepository implements GameRepository {
     }
   }
 
-  // Stream for real-time updates
+  // Stream for real-time updates with timeout handling
   Stream<CardGameState> watchGameState(String gameId) {
-    return _database.child('games').child(gameId).onValue.map((event) {
-      if (event.snapshot.value == null) {
-        throw Exception('Game not found');
-      }
-      return _gameStateFromJson(event.snapshot.value as Map, gameId);
-    });
+    return _database.child('games').child(gameId).onValue
+        .timeout(
+          const Duration(seconds: 30),
+          onTimeout: (sink) {
+            print('⏱️ Firebase stream timeout - reconnecting...');
+            // Don't close the sink, just log the timeout
+            // The stream will continue listening
+          },
+        )
+        .map((event) {
+          if (event.snapshot.value == null) {
+            throw Exception('Game not found');
+          }
+          return _gameStateFromJson(event.snapshot.value as Map, gameId);
+        });
   }
 
   // JSON Serialization

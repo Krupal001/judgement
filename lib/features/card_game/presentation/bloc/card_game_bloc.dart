@@ -33,16 +33,24 @@ class CardGameBloc extends Bloc<CardGameEvent, CardGameBlocState> {
   void _startListening(String gameId, String currentPlayerId) {
     _gameSubscription?.cancel();
     
-    print('Starting Firebase listener for game: $gameId, player: $currentPlayerId');
+    print('🎧 Starting Firebase listener for game: $gameId, player: $currentPlayerId');
     
     if (repository is FirebaseGameRepository) {
       _gameSubscription = (repository as FirebaseGameRepository)
           .watchGameState(gameId)
-          .listen((gameState) {
-        print('Firebase update received - Phase: ${gameState.currentRound?.phase}, CurrentPlayerIndex: ${gameState.currentRound?.currentPlayerIndex}');
-        print('Players: ${gameState.players.map((p) => '${p.name}(bid: ${p.bid})').toList()}');
-        add(GameStateUpdatedEvent(gameState: gameState, currentPlayerId: currentPlayerId));
-      });
+          .listen(
+            (gameState) {
+              print('✅ Firebase update received - Phase: ${gameState.currentRound?.phase}, CurrentPlayerIndex: ${gameState.currentRound?.currentPlayerIndex}');
+              print('Players: ${gameState.players.map((p) => '${p.name}(bid: ${p.bid})').toList()}');
+              add(GameStateUpdatedEvent(gameState: gameState, currentPlayerId: currentPlayerId));
+            },
+            onError: (error) {
+              print('❌ Firebase listener error: $error');
+              // Don't emit error state, just log it and try to continue
+              // The game will continue with the last known state
+            },
+            cancelOnError: false,  // Keep listening even if there's an error
+          );
     }
   }
 
