@@ -1,96 +1,80 @@
 import 'package:equatable/equatable.dart';
+import 'package:playing_cards/playing_cards.dart';
 
-enum Suit {
-  spades,
-  diamonds,
-  clubs,
-  hearts,
-}
+// Re-export the playing_cards types for convenience
+export 'package:playing_cards/playing_cards.dart' show Suit, CardValue;
 
-enum Rank {
-  two,
-  three,
-  four,
-  five,
-  six,
-  seven,
-  eight,
-  nine,
-  ten,
-  jack,
-  queen,
-  king,
-  ace,
-}
-
+// Wrapper class to maintain compatibility with existing code
 class PlayingCard extends Equatable {
   final Suit suit;
-  final Rank rank;
+  final CardValue value;
 
-  const PlayingCard({
-    required this.suit,
-    required this.rank,
-  });
+  const PlayingCard({required this.suit, required this.value});
 
-  int get value {
-    switch (rank) {
-      case Rank.two:
+  // Convert CardValue to numeric value for game logic
+  int get numericValue {
+    switch (value) {
+      case CardValue.two:
         return 2;
-      case Rank.three:
+      case CardValue.three:
         return 3;
-      case Rank.four:
+      case CardValue.four:
         return 4;
-      case Rank.five:
+      case CardValue.five:
         return 5;
-      case Rank.six:
+      case CardValue.six:
         return 6;
-      case Rank.seven:
+      case CardValue.seven:
         return 7;
-      case Rank.eight:
+      case CardValue.eight:
         return 8;
-      case Rank.nine:
+      case CardValue.nine:
         return 9;
-      case Rank.ten:
+      case CardValue.ten:
         return 10;
-      case Rank.jack:
+      case CardValue.jack:
         return 11;
-      case Rank.queen:
+      case CardValue.queen:
         return 12;
-      case Rank.king:
+      case CardValue.king:
         return 13;
-      case Rank.ace:
+      case CardValue.ace:
         return 14;
+      default:
+        return 0;
     }
   }
 
   String get rankString {
-    switch (rank) {
-      case Rank.two:
+    switch (value) {
+      case CardValue.two:
         return '2';
-      case Rank.three:
+      case CardValue.three:
         return '3';
-      case Rank.four:
+      case CardValue.four:
         return '4';
-      case Rank.five:
+      case CardValue.five:
         return '5';
-      case Rank.six:
+      case CardValue.six:
         return '6';
-      case Rank.seven:
+      case CardValue.seven:
         return '7';
-      case Rank.eight:
+      case CardValue.eight:
         return '8';
-      case Rank.nine:
+      case CardValue.nine:
         return '9';
-      case Rank.ten:
+      case CardValue.ten:
         return '10';
-      case Rank.jack:
+      case CardValue.jack:
         return 'J';
-      case Rank.queen:
+      case CardValue.queen:
         return 'Q';
-      case Rank.king:
+      case CardValue.king:
         return 'K';
-      case Rank.ace:
+      case CardValue.ace:
         return 'A';
+      default:
+        return '';
     }
   }
 
@@ -104,13 +88,15 @@ class PlayingCard extends Equatable {
         return '♣';
       case Suit.hearts:
         return '♥';
+      case Suit.joker:
+        return '🃏';
     }
   }
 
   bool get isRed => suit == Suit.diamonds || suit == Suit.hearts;
 
   @override
-  List<Object> get props => [suit, rank];
+  List<Object> get props => [suit, value];
 
   @override
   String toString() => '$rankString$suitSymbol';

@@ -54,6 +54,7 @@ dependencies:
   
   # UI
   google_fonts: ^6.1.0
+  playing_cards: ^0.4.1
   
   # Networking (for future multiplayer)
   uuid: ^4.1.0

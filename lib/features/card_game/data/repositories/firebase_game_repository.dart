@@ -557,14 +557,14 @@ class FirebaseGameRepository implements GameRepository {
   Map<String, dynamic> _cardToJson(PlayingCard card) {
     return {
       'suit': card.suit.toString(),
-      'rank': card.rank.toString(),
+      'value': card.value.toString(),
     };
   }
 
   PlayingCard _cardFromJson(Map data) {
     return PlayingCard(
       suit: _suitFromString(data['suit'] as String),
-      rank: _rankFromString(data['rank'] as String),
+      value: _cardValueFromString(data['value'] as String? ?? data['rank'] as String),
     );
   }
 
@@ -592,22 +592,35 @@ class FirebaseGameRepository implements GameRepository {
     }
   }
 
-  Rank _rankFromString(String str) {
+  CardValue _cardValueFromString(String str) {
     switch (str) {
-      case 'Rank.two': return Rank.two;
-      case 'Rank.three': return Rank.three;
-      case 'Rank.four': return Rank.four;
-      case 'Rank.five': return Rank.five;
-      case 'Rank.six': return Rank.six;
-      case 'Rank.seven': return Rank.seven;
-      case 'Rank.eight': return Rank.eight;
-      case 'Rank.nine': return Rank.nine;
-      case 'Rank.ten': return Rank.ten;
-      case 'Rank.jack': return Rank.jack;
-      case 'Rank.queen': return Rank.queen;
-      case 'Rank.king': return Rank.king;
-      case 'Rank.ace': return Rank.ace;
-      default: return Rank.two;
+      case 'CardValue.two':
+      case 'Rank.two': return CardValue.two;
+      case 'CardValue.three':
+      case 'Rank.three': return CardValue.three;
+      case 'CardValue.four':
+      case 'Rank.four': return CardValue.four;
+      case 'CardValue.five':
+      case 'Rank.five': return CardValue.five;
+      case 'CardValue.six':
+      case 'Rank.six': return CardValue.six;
+      case 'CardValue.seven':
+      case 'Rank.seven': return CardValue.seven;
+      case 'CardValue.eight':
+      case 'Rank.eight': return CardValue.eight;
+      case 'CardValue.nine':
+      case 'Rank.nine': return CardValue.nine;
+      case 'CardValue.ten':
+      case 'Rank.ten': return CardValue.ten;
+      case 'CardValue.jack':
+      case 'Rank.jack': return CardValue.jack;
+      case 'CardValue.queen':
+      case 'Rank.queen': return CardValue.queen;
+      case 'CardValue.king':
+      case 'Rank.king': return CardValue.king;
+      case 'CardValue.ace':
+      case 'Rank.ace': return CardValue.ace;
+      default: return CardValue.two;
     }
   }
 

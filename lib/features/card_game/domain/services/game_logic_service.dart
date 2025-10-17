@@ -6,9 +6,11 @@ class GameLogicService {
   // Generate a standard 52-card deck
   List<PlayingCard> generateDeck() {
     final deck = <PlayingCard>[];
-    for (final suit in Suit.values) {
-      for (final rank in Rank.values) {
-        deck.add(PlayingCard(suit: suit, rank: rank));
+    for (final suit in [Suit.spades, Suit.diamonds, Suit.clubs, Suit.hearts]) {
+      for (final cardValue in CardValue.values) {
+        if (cardValue != CardValue.joker_1 && cardValue != CardValue.joker_2) {
+          deck.add(PlayingCard(suit: suit, value: cardValue));
+        }
       }
     }
     return deck;
@@ -97,7 +99,7 @@ class GameLogicService {
       
       // Both trump - compare values
       if (card1.suit == trumpSuit && card2.suit == trumpSuit) {
-        return card1.value.compareTo(card2.value);
+        return card1.numericValue.compareTo(card2.numericValue);
       }
     }
 
@@ -107,7 +109,7 @@ class GameLogicService {
 
     // Same suit - compare values
     if (card1.suit == card2.suit) {
-      return card1.value.compareTo(card2.value);
+      return card1.numericValue.compareTo(card2.numericValue);
     }
 
     // Different suits, neither trump nor lead - first card wins
@@ -142,7 +144,7 @@ class GameLogicService {
       if (a.suit.index != b.suit.index) {
         return a.suit.index.compareTo(b.suit.index);
       }
-      return a.value.compareTo(b.value);
+      return a.numericValue.compareTo(b.numericValue);
     });
     return sorted;
   }
