@@ -10,4 +10,5 @@ abstract class GameRepository {
   Future<Either<Failure, CardGameState>> placeBid(String gameId, String playerId, int bid);
   Future<Either<Failure, CardGameState>> playCard(String gameId, String playerId, PlayingCard card);
   Future<Either<Failure, CardGameState>> getGameState(String gameId);
+  Future<Either<Failure, CardGameState>> startNextRound(String gameId);
 }

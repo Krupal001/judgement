@@ -21,6 +21,7 @@ class CardGameBloc extends Bloc<CardGameEvent, CardGameBlocState> {
     on<PlayCardEvent>(_onPlayCard);
     on<RefreshGameEvent>(_onRefreshGame);
     on<GameStateUpdatedEvent>(_onGameStateUpdated);
+    on<StartNextRoundEvent>(_onStartNextRound);
   }
 
   @override
@@ -184,6 +185,23 @@ class CardGameBloc extends Bloc<CardGameEvent, CardGameBlocState> {
         gameState: gameState,
         currentPlayerId: currentState.currentPlayerId,
       )),
+    );
+  }
+
+  Future<void> _onStartNextRound(
+    StartNextRoundEvent event,
+    Emitter<CardGameBlocState> emit,
+  ) async {
+    if (state is! CardGameLoaded) return;
+
+    final result = await repository.startNextRound(event.gameId);
+
+    result.fold(
+      (failure) => emit(CardGameError(message: failure.message ?? 'Failed to start next round')),
+      (gameState) {
+        print('Next round started - Firebase listener will update state');
+        // Don't emit state here - let the Firebase listener handle it
+      },
     );
   }
 }

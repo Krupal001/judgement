@@ -15,6 +15,7 @@ class GameTablePage extends StatefulWidget {
 
 class _GameTablePageState extends State<GameTablePage> {
   String? _lastBidDialogPlayerId;
+  int? _lastRoundShownWinner;
 
   @override
   Widget build(BuildContext context) {
@@ -82,13 +83,28 @@ class _GameTablePageState extends State<GameTablePage> {
               }
 
               // Check if round just completed and show winner
-              if (round.phase == GamePhase.bidding && 
-                  currentPlayer.hand.isNotEmpty && 
-                  game.players.every((p) => p.bid == null)) {
-                // Round just started, check if we should show previous round winner
+              if (round.phase == GamePhase.roundComplete && 
+                  _lastRoundShownWinner != round.roundNumber) {
                 WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (mounted && round.roundNumber > 0) {
-                    _showRoundWinner(context, game);
+                  if (mounted) {
+                    setState(() {
+                      _lastRoundShownWinner = round.roundNumber;
+                    });
+                    _showRoundWinner(context, game, round.roundNumber);
+                  }
+                });
+              }
+              
+              // Reset dialog key when entering a new round's bidding phase
+              if (round.phase == GamePhase.bidding && 
+                  game.players.every((p) => p.bid == null) &&
+                  _lastBidDialogPlayerId != null &&
+                  !_lastBidDialogPlayerId!.startsWith('${round.roundNumber}_')) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted) {
+                    setState(() {
+                      _lastBidDialogPlayerId = null;
+                    });
                   }
                 });
               }
@@ -407,12 +423,13 @@ class _GameTablePageState extends State<GameTablePage> {
     );
   }
 
-  void _showRoundWinner(BuildContext context, game) {
+  void _showRoundWinner(BuildContext context, game, int completedRound) {
     // Find the player with highest score
     final sortedPlayers = List.from(game.players)
       ..sort((a, b) => b.totalScore.compareTo(a.totalScore));
     final leader = sortedPlayers.first;
     
+    // Show scores for all players
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -441,7 +458,7 @@ class _GameTablePageState extends State<GameTablePage> {
               const Icon(Icons.emoji_events, size: 80, color: Colors.white),
               const SizedBox(height: 16),
               Text(
-                'Round ${game.currentRound!.roundNumber} Complete!',
+                'Round ${completedRound + 1} Complete!',
                 style: GoogleFonts.poppins(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
@@ -450,32 +467,53 @@ class _GameTablePageState extends State<GameTablePage> {
               ),
               const SizedBox(height: 24),
               Text(
-                'Current Leader',
+                'Scoreboard',
                 style: GoogleFonts.poppins(
-                  fontSize: 16,
-                  color: Colors.white70,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                leader.name,
-                style: GoogleFonts.poppins(
-                  fontSize: 32,
+                  fontSize: 18,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
                 ),
               ),
-              Text(
-                '${leader.totalScore} points',
-                style: GoogleFonts.poppins(
-                  fontSize: 20,
-                  color: Colors.white,
+              const SizedBox(height: 16),
+              ...sortedPlayers.map((player) => Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      player.name,
+                      style: GoogleFonts.poppins(
+                        fontSize: 16,
+                        color: Colors.white,
+                        fontWeight: player.id == leader.id ? FontWeight.bold : FontWeight.normal,
+                      ),
+                    ),
+                    Row(
+                      children: [
+                        if (player.id == leader.id)
+                          const Icon(Icons.emoji_events, color: Colors.amber, size: 20),
+                        const SizedBox(width: 8),
+                        Text(
+                          '${player.totalScore} pts',
+                          style: GoogleFonts.poppins(
+                            fontSize: 16,
+                            color: Colors.amber.shade200,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-              ),
+              )),
               const SizedBox(height: 24),
               ElevatedButton(
                 onPressed: () {
                   Navigator.pop(dialogContext);
+                  // Trigger next round to start
+                  context.read<CardGameBloc>().add(
+                    StartNextRoundEvent(gameId: game.gameId),
+                  );
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.white,
@@ -483,7 +521,7 @@ class _GameTablePageState extends State<GameTablePage> {
                   padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                 ),
                 child: Text(
-                  'Continue',
+                  'Next Round',
                   style: GoogleFonts.poppins(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,

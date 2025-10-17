@@ -72,3 +72,12 @@ class GameStateUpdatedEvent extends CardGameEvent {
   @override
   List<Object> get props => [gameState, currentPlayerId];
 }
+
+class StartNextRoundEvent extends CardGameEvent {
+  final String gameId;
+
+  const StartNextRoundEvent({required this.gameId});
+
+  @override
+  List<Object> get props => [gameId];
+}

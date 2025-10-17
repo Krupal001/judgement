@@ -319,4 +319,75 @@ class GameRepositoryImpl implements GameRepository {
       return Left(CacheFailure());
     }
   }
+
+  @override
+  Future<Either<Failure, CardGameState>> startNextRound(String gameId) async {
+    try {
+      final game = _games[gameId];
+      if (game == null) return Left(CacheFailure());
+      if (game.currentRound == null) return Left(CacheFailure());
+      if (game.currentRound!.phase != GamePhase.roundComplete) {
+        return Left(CacheFailure());
+      }
+
+      // The next round was already prepared in _completeRound
+      // We just need to transition from roundComplete to the prepared next round
+      final nextRound = _prepareNextRound(game);
+      
+      final updatedGame = game.copyWith(currentRound: nextRound);
+      _games[gameId] = updatedGame;
+      
+      return Right(updatedGame);
+    } catch (e) {
+      return Left(CacheFailure());
+    }
+  }
+
+  GameRound _prepareNextRound(CardGameState game) {
+    // Determine next round parameters
+    final currentCards = game.currentRound!.cardsPerPlayer;
+    int nextCards;
+
+    if (currentCards == 1) {
+      nextCards = 2;
+    } else if (game.isAscending) {
+      nextCards = currentCards + 1;
+      if (nextCards > game.startingCards) {
+        // Game complete
+        return game.currentRound!.copyWith(phase: GamePhase.gameComplete);
+      }
+    } else {
+      nextCards = currentCards - 1;
+    }
+
+    // Deal new cards for next round
+    final hands = gameLogic.dealCards(
+      game.players.map((p) => p.id).toList(),
+      nextCards,
+    );
+
+    // Update players with new hands
+    final playersWithCards = game.players.map((player) {
+      final hand = gameLogic.sortHand(hands[player.id] ?? []);
+      return player.copyWith(hand: hand);
+    }).toList();
+
+    // Update game state with new players
+    _games[game.gameId] = game.copyWith(players: playersWithCards);
+
+    // Create next round
+    final nextRoundNumber = game.currentRound!.roundNumber + 1;
+    final nextDealerIndex = (game.currentRound!.dealerIndex + 1) % game.players.length;
+    final nextPlayerIndex = game.players.length > 1 ? (nextDealerIndex + 1) % game.players.length : 0;
+
+    return GameRound(
+      roundNumber: nextRoundNumber,
+      cardsPerPlayer: nextCards,
+      trumpSuit: gameLogic.getTrumpSuit(nextRoundNumber),
+      dealerIndex: nextDealerIndex,
+      currentPlayerIndex: nextPlayerIndex,
+      phase: GamePhase.bidding,
+      scoringStrategy: game.currentRound!.scoringStrategy,
+    );
+  }
 }
