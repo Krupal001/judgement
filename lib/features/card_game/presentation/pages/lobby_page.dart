@@ -19,9 +19,10 @@ class LobbyPage extends StatelessWidget {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              Colors.green.shade900,
-              Colors.teal.shade700,
-              Colors.blue.shade800,
+              Color(0xFF1a1a2e),
+              Color(0xFF16213e),
+              Color(0xFF0f3460),
+              Color(0xFF533483),
             ],
           ),
         ),
@@ -121,12 +122,24 @@ class LobbyPage extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.15),
+        gradient: LinearGradient(
+          colors: [
+            Color(0xFFe94560).withValues(alpha: 0.3),
+            Color(0xFF9b59b6).withValues(alpha: 0.2),
+          ],
+        ),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: Colors.white.withValues(alpha: 0.3),
+          color: Color(0xFFe94560).withValues(alpha: 0.5),
           width: 2,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Color(0xFFe94560).withValues(alpha: 0.3),
+            blurRadius: 15,
+            spreadRadius: 2,
+          ),
+        ],
       ),
       child: Column(
         children: [
@@ -155,7 +168,7 @@ class LobbyPage extends StatelessWidget {
                 style: GoogleFonts.orbitron(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
-                  color: Colors.amber.shade400,
+                  color: Color(0xFFf39c12),
                   letterSpacing: 2,
                 ),
               ),
@@ -185,11 +198,16 @@ class LobbyPage extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.1),
+        gradient: LinearGradient(
+          colors: [
+            Colors.white.withValues(alpha: 0.15),
+            Colors.white.withValues(alpha: 0.05),
+          ],
+        ),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: Colors.white.withValues(alpha: 0.2),
-          width: 1,
+          color: Color(0xFF00d9ff).withValues(alpha: 0.3),
+          width: 2,
         ),
       ),
       child: Column(
@@ -214,13 +232,22 @@ class LobbyPage extends StatelessWidget {
                   child: Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
+                      gradient: LinearGradient(
+                        colors: [
+                          Colors.white.withValues(alpha: 0.2),
+                          Colors.white.withValues(alpha: 0.1),
+                        ],
+                      ),
                       borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.3),
+                        width: 1,
+                      ),
                     ),
                     child: Row(
                       children: [
                         CircleAvatar(
-                          backgroundColor: Colors.amber.shade400,
+                          backgroundColor: Color(0xFFf39c12),
                           child: Text(
                             player.name[0].toUpperCase(),
                             style: GoogleFonts.orbitron(
@@ -247,15 +274,27 @@ class LobbyPage extends StatelessWidget {
                               vertical: 6,
                             ),
                             decoration: BoxDecoration(
-                              color: Colors.amber.shade400,
+                              gradient: LinearGradient(
+                                colors: [
+                                  Color(0xFFf39c12),
+                                  Color(0xFFe94560),
+                                ],
+                              ),
                               borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Color(0xFFf39c12).withValues(alpha: 0.5),
+                                  blurRadius: 8,
+                                  spreadRadius: 1,
+                                ),
+                              ],
                             ),
                             child: Text(
                               'HOST',
                               style: GoogleFonts.orbitron(
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.black87,
+                                color: Colors.white,
                               ),
                             ),
                           ),
@@ -277,12 +316,15 @@ class LobbyPage extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
         gradient: LinearGradient(
-          colors: [Colors.green.shade400, Colors.teal.shade600],
+          colors: [
+            Color(0xFF00d9ff),
+            Color(0xFF0abde3),
+          ],
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.green.withValues(alpha: 0.5),
-            blurRadius: 20,
+            color: Color(0xFF00d9ff).withValues(alpha: 0.6),
+            blurRadius: 25,
             offset: const Offset(0, 10),
           ),
         ],
@@ -316,16 +358,21 @@ class LobbyPage extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.orange.withValues(alpha: 0.2),
+        gradient: LinearGradient(
+          colors: [
+            Color(0xFFf39c12).withValues(alpha: 0.3),
+            Color(0xFFe94560).withValues(alpha: 0.2),
+          ],
+        ),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Colors.orange.withValues(alpha: 0.5),
+          color: Color(0xFFf39c12).withValues(alpha: 0.5),
           width: 2,
         ),
       ),
       child: Row(
         children: [
-          const Icon(Icons.info_outline, color: Colors.orange, size: 28),
+          Icon(Icons.info_outline, color: Color(0xFFf39c12), size: 28),
           const SizedBox(width: 16),
           Expanded(
             child: Text(

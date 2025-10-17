@@ -34,9 +34,10 @@ class _HomePageState extends State<HomePage> {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              Colors.green.shade900,
-              Colors.teal.shade700,
-              Colors.blue.shade800,
+              Color(0xFF1a1a2e),
+              Color(0xFF16213e),
+              Color(0xFF0f3460),
+              Color(0xFF533483),
             ],
           ),
         ),
@@ -146,7 +147,7 @@ class _HomePageState extends State<HomePage> {
         decoration: InputDecoration(
           hintText: 'Enter your name',
           border: InputBorder.none,
-          icon: const Icon(Icons.person, color: Colors.teal),
+          icon: Icon(Icons.person, color: Color(0xFF00d9ff)),
           hintStyle: GoogleFonts.poppins(color: Colors.grey),
         ),
         style: GoogleFonts.poppins(fontSize: 16),
@@ -173,7 +174,7 @@ class _HomePageState extends State<HomePage> {
         decoration: InputDecoration(
           hintText: 'Enter Game ID',
           border: InputBorder.none,
-          icon: const Icon(Icons.tag, color: Colors.teal),
+          icon: Icon(Icons.tag, color: Color(0xFF00d9ff)),
           hintStyle: GoogleFonts.poppins(color: Colors.grey),
         ),
         style: GoogleFonts.poppins(fontSize: 16),
@@ -201,7 +202,7 @@ class _HomePageState extends State<HomePage> {
         children: [
           Row(
             children: [
-              const Icon(Icons.people, color: Colors.teal),
+              Icon(Icons.people, color: Color(0xFF00d9ff)),
               const SizedBox(width: 12),
               Text(
                 'Number of Players',
@@ -231,12 +232,29 @@ class _HomePageState extends State<HomePage> {
                   width: 50,
                   height: 50,
                   decoration: BoxDecoration(
-                    color: isSelected ? Colors.teal.shade600 : Colors.grey.shade200,
+                    gradient: isSelected
+                        ? LinearGradient(
+                            colors: [
+                              Color(0xFF00d9ff),
+                              Color(0xFF0abde3),
+                            ],
+                          )
+                        : null,
+                    color: isSelected ? null : Colors.grey.shade200,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: isSelected ? Colors.teal.shade800 : Colors.grey.shade400,
+                      color: isSelected ? Color(0xFF00d9ff) : Colors.grey.shade400,
                       width: 2,
                     ),
+                    boxShadow: isSelected
+                        ? [
+                            BoxShadow(
+                              color: Color(0xFF00d9ff).withValues(alpha: 0.5),
+                              blurRadius: 8,
+                              spreadRadius: 1,
+                            ),
+                          ]
+                        : null,
                   ),
                   child: Center(
                     child: Text(
@@ -272,12 +290,15 @@ class _HomePageState extends State<HomePage> {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
         gradient: LinearGradient(
-          colors: [Colors.amber.shade400, Colors.orange.shade600],
+          colors: [
+            Color(0xFFf39c12),
+            Color(0xFFe94560),
+          ],
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.orange.withValues(alpha: 0.5),
-            blurRadius: 20,
+            color: Color(0xFFf39c12).withValues(alpha: 0.6),
+            blurRadius: 25,
             offset: const Offset(0, 10),
           ),
         ],
@@ -311,12 +332,15 @@ class _HomePageState extends State<HomePage> {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
         gradient: LinearGradient(
-          colors: [Colors.blue.shade400, Colors.purple.shade600],
+          colors: [
+            Color(0xFF9b59b6),
+            Color(0xFF533483),
+          ],
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.blue.withValues(alpha: 0.5),
-            blurRadius: 20,
+            color: Color(0xFF9b59b6).withValues(alpha: 0.6),
+            blurRadius: 25,
             offset: const Offset(0, 10),
           ),
         ],
