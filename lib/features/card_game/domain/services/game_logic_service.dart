@@ -117,24 +117,16 @@ class GameLogicService {
   }
 
   // Calculate score for a player
+  // Simple rule: Exact bid match = 10 points, otherwise 0 points
   int calculateScore(
     int bid,
     int tricksWon,
     ScoringStrategy strategy,
   ) {
     final madeBid = bid == tricksWon;
-
-    switch (strategy) {
-      case ScoringStrategy.highIncentive:
-        final score = ((bid + 1) * 10) + bid;
-        return madeBid ? score : -score;
-
-      case ScoringStrategy.mediumIncentive:
-        return madeBid ? (10 * bid) : 0;
-
-      case ScoringStrategy.lowIncentive:
-        return madeBid ? ((bid * 2) + 5) : 0;
-    }
+    
+    // Simplified scoring: Match bid = 10 points, fail = 0 points
+    return madeBid ? 10 : 0;
   }
 
   // Sort hand by suit and rank

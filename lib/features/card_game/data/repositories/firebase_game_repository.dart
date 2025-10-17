@@ -415,7 +415,7 @@ class FirebaseGameRepository implements GameRepository {
     return game.currentRound!.copyWith(phase: GamePhase.roundComplete);
   }
 
-  GameRound _prepareNextRound(CardGameState game) {
+  Map<String, dynamic> _prepareNextRoundWithPlayers(CardGameState game) {
     final currentCards = game.currentRound!.cardsPerPlayer;
     final nextCards = currentCards + 1;
 
@@ -427,7 +427,7 @@ class FirebaseGameRepository implements GameRepository {
       nextCards,
     );
 
-    // Update players with new hands
+    // Update players with new hands and RESET bids
     final playersWithCards = game.players.map((player) {
       final hand = gameLogic.sortHand(hands[player.id] ?? []);
       return Player(
@@ -435,23 +435,17 @@ class FirebaseGameRepository implements GameRepository {
         name: player.name,
         isHost: player.isHost,
         hand: hand,
-        bid: null,  // Reset bid for new round
+        bid: null,  // CRITICAL: Reset bid for new round
         tricksWon: 0,  // Reset tricks won
         totalScore: player.totalScore,  // Keep the updated score
       );
     }).toList();
 
-    // Update game state with new players in Firebase
-    final gameId = game.gameId;
-    _database.child('games').child(gameId).child('players').set(
-      playersWithCards.map((p) => _playerToJson(p)).toList(),
-    );
-
     final nextRoundNumber = game.currentRound!.roundNumber + 1;
     final nextDealerIndex = (game.currentRound!.dealerIndex + 1) % game.players.length;
     final nextPlayerIndex = game.players.length > 1 ? (nextDealerIndex + 1) % game.players.length : 0;
 
-    return GameRound(
+    final nextRound = GameRound(
       roundNumber: nextRoundNumber,
       cardsPerPlayer: nextCards,
       trumpSuit: gameLogic.getTrumpSuit(nextRoundNumber),
@@ -460,6 +454,11 @@ class FirebaseGameRepository implements GameRepository {
       phase: GamePhase.bidding,
       scoringStrategy: game.currentRound!.scoringStrategy,
     );
+
+    return {
+      'round': nextRound,
+      'players': playersWithCards,
+    };
   }
 
   @override
@@ -494,15 +493,25 @@ class FirebaseGameRepository implements GameRepository {
         return Left(ServerFailure());
       }
 
-      // Prepare next round
-      final nextRound = _prepareNextRound(game);
-      final updatedGame = game.copyWith(currentRound: nextRound);
+      // Prepare next round with updated players
+      final result = _prepareNextRoundWithPlayers(game);
+      final nextRound = result['round'] as GameRound;
+      final updatedPlayers = result['players'] as List<Player>;
       
-      // Update Firebase
-      await _database.child('games').child(gameId).update(_gameStateToJson(updatedGame));
+      final updatedGame = game.copyWith(
+        currentRound: nextRound,
+        players: updatedPlayers,
+      );
+      
+      // Update Firebase with complete game state
+      await _database.child('games').child(gameId).set(_gameStateToJson(updatedGame));
+      
+      print('✅ Next round started: Round ${nextRound.roundNumber}, Players bids reset');
+      print('Players: ${updatedPlayers.map((p) => '${p.name}:bid=${p.bid}').join(', ')}');
       
       return Right(updatedGame);
     } catch (e) {
+      print('❌ Error starting next round: $e');
       return Left(ServerFailure());
     }
   }

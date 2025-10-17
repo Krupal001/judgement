@@ -330,20 +330,28 @@ class GameRepositoryImpl implements GameRepository {
         return Left(CacheFailure());
       }
 
-      // The next round was already prepared in _completeRound
-      // We just need to transition from roundComplete to the prepared next round
-      final nextRound = _prepareNextRound(game);
+      // Prepare next round with updated players
+      final result = _prepareNextRound(game);
+      final nextRound = result['round'] as GameRound;
+      final updatedPlayers = result['players'] as List<Player>;
       
-      final updatedGame = game.copyWith(currentRound: nextRound);
+      final updatedGame = game.copyWith(
+        currentRound: nextRound,
+        players: updatedPlayers,
+      );
       _games[gameId] = updatedGame;
+      
+      print('✅ Next round started: Round ${nextRound.roundNumber}, Players bids reset');
+      print('Players: ${updatedPlayers.map((p) => '${p.name}:bid=${p.bid}').join(', ')}');
       
       return Right(updatedGame);
     } catch (e) {
+      print('❌ Error starting next round: $e');
       return Left(CacheFailure());
     }
   }
 
-  GameRound _prepareNextRound(CardGameState game) {
+  Map<String, dynamic> _prepareNextRound(CardGameState game) {
     // Determine next round parameters
     final currentCards = game.currentRound!.cardsPerPlayer;
     int nextCards;
@@ -354,7 +362,10 @@ class GameRepositoryImpl implements GameRepository {
       nextCards = currentCards + 1;
       if (nextCards > game.startingCards) {
         // Game complete
-        return game.currentRound!.copyWith(phase: GamePhase.gameComplete);
+        return {
+          'round': game.currentRound!.copyWith(phase: GamePhase.gameComplete),
+          'players': game.players,
+        };
       }
     } else {
       nextCards = currentCards - 1;
@@ -366,21 +377,26 @@ class GameRepositoryImpl implements GameRepository {
       nextCards,
     );
 
-    // Update players with new hands
+    // Update players with new hands and RESET bids
     final playersWithCards = game.players.map((player) {
       final hand = gameLogic.sortHand(hands[player.id] ?? []);
-      return player.copyWith(hand: hand);
+      return Player(
+        id: player.id,
+        name: player.name,
+        isHost: player.isHost,
+        hand: hand,
+        bid: null,  // CRITICAL: Reset bid for new round
+        tricksWon: 0,  // Reset tricks won
+        totalScore: player.totalScore,  // Keep the updated score
+      );
     }).toList();
-
-    // Update game state with new players
-    _games[game.gameId] = game.copyWith(players: playersWithCards);
 
     // Create next round
     final nextRoundNumber = game.currentRound!.roundNumber + 1;
     final nextDealerIndex = (game.currentRound!.dealerIndex + 1) % game.players.length;
     final nextPlayerIndex = game.players.length > 1 ? (nextDealerIndex + 1) % game.players.length : 0;
 
-    return GameRound(
+    final nextRound = GameRound(
       roundNumber: nextRoundNumber,
       cardsPerPlayer: nextCards,
       trumpSuit: gameLogic.getTrumpSuit(nextRoundNumber),
@@ -389,5 +405,10 @@ class GameRepositoryImpl implements GameRepository {
       phase: GamePhase.bidding,
       scoringStrategy: game.currentRound!.scoringStrategy,
     );
+
+    return {
+      'round': nextRound,
+      'players': playersWithCards,
+    };
   }
 }
