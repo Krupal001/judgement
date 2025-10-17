@@ -403,8 +403,12 @@ class GameRepositoryImpl implements GameRepository {
       dealerIndex: nextDealerIndex,
       currentPlayerIndex: nextPlayerIndex,
       phase: GamePhase.bidding,
+      currentTrick: const [],  // CRITICAL: Reset trick
+      trickNumber: 0,  // CRITICAL: Reset trick number
       scoringStrategy: game.currentRound!.scoringStrategy,
     );
+    
+    print('✅ New round created: Round $nextRoundNumber, Cards: $nextCards, Tricks: 0');
 
     return {
       'round': nextRound,

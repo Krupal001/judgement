@@ -346,7 +346,7 @@ class FirebaseGameRepository implements GameRepository {
         print('Round complete: $roundComplete (hand size: ${updatedPlayers[0].hand.length})');
         
         if (roundComplete) {
-          print('Calculating scores for round ${game.currentRound!.roundNumber}');
+          print('🎯 Calculating scores for round ${game.currentRound!.roundNumber}');
           
           // Calculate scores for completed round
           final scoredPlayers = updatedPlayers.map((player) {
@@ -355,17 +355,23 @@ class FirebaseGameRepository implements GameRepository {
               player.tricksWon,
               game.currentRound!.scoringStrategy,
             );
-            print('${player.name}: Bid=${player.bid}, Won=${player.tricksWon}, RoundScore=$roundScore, TotalScore=${player.totalScore + roundScore}');
+            final newTotal = player.totalScore + roundScore;
+            print('${player.name}: Bid=${player.bid}, Won=${player.tricksWon}, RoundScore=$roundScore, OldTotal=${player.totalScore}, NewTotal=$newTotal');
             
             return player.copyWith(
-              totalScore: player.totalScore + roundScore,
+              totalScore: newTotal,
               tricksWon: 0,
               resetBid: true,  // Use flag to reset bid to null
             );
           }).toList();
           
-          updatedGame = updatedGame.copyWith(players: scoredPlayers);
-          updatedRound = _completeRound(updatedGame, scoredPlayers);
+          updatedRound = _completeRound(updatedGame.copyWith(players: scoredPlayers), scoredPlayers);
+          
+          // CRITICAL: Use scoredPlayers, not updatedPlayers!
+          updatedGame = updatedGame.copyWith(
+            players: scoredPlayers,
+            currentRound: updatedRound,
+          );
         } else {
           // Start new trick
           print('Starting new trick ${updatedRound.trickNumber + 1}');
@@ -374,12 +380,12 @@ class FirebaseGameRepository implements GameRepository {
             currentPlayerIndex: winnerIndex,
             trickNumber: updatedRound.trickNumber + 1,
           );
+          
+          updatedGame = updatedGame.copyWith(
+            players: updatedPlayers,
+            currentRound: updatedRound,
+          );
         }
-
-        updatedGame = updatedGame.copyWith(
-          players: updatedPlayers,
-          currentRound: updatedRound,
-        );
       } else {
         // Move to next player
         final nextPlayerIndex = (updatedRound.currentPlayerIndex + 1) % game.players.length;
@@ -452,8 +458,12 @@ class FirebaseGameRepository implements GameRepository {
       dealerIndex: nextDealerIndex,
       currentPlayerIndex: nextPlayerIndex,
       phase: GamePhase.bidding,
+      currentTrick: const [],  // CRITICAL: Reset trick
+      trickNumber: 0,  // CRITICAL: Reset trick number
       scoringStrategy: game.currentRound!.scoringStrategy,
     );
+    
+    print('✅ New round created: Round $nextRoundNumber, Cards: $nextCards, Tricks: 0');
 
     return {
       'round': nextRound,
