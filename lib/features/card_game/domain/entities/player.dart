@@ -25,7 +25,7 @@ class Player extends Equatable {
     String? name,
     List<PlayingCard>? hand,
     int? bid,
-    bool resetBid = false,  // Add flag to explicitly reset bid
+    bool resetBid = false, // Add flag to explicitly reset bid
     int? tricksWon,
     int? totalScore,
     bool? isHost,
@@ -34,7 +34,7 @@ class Player extends Equatable {
       id: id ?? this.id,
       name: name ?? this.name,
       hand: hand ?? this.hand,
-      bid: resetBid ? null : (bid ?? this.bid),  // Reset if flag is true
+      bid: resetBid ? null : (bid ?? this.bid), // Reset if flag is true
       tricksWon: tricksWon ?? this.tricksWon,
       totalScore: totalScore ?? this.totalScore,
       isHost: isHost ?? this.isHost,
@@ -46,5 +46,13 @@ class Player extends Equatable {
   bool get madeContract => bid != null && tricksWon == bid;
 
   @override
-  List<Object?> get props => [id, name, hand, bid, tricksWon, totalScore, isHost];
+  List<Object?> get props => [
+    id,
+    name,
+    hand,
+    bid,
+    tricksWon,
+    totalScore,
+    isHost,
+  ];
 }

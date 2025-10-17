@@ -4,6 +4,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:confetti/confetti.dart';
 import '../bloc/card_game_bloc.dart';
 import '../../domain/entities/game_round.dart';
+import '../../domain/entities/card.dart';
+import '../../domain/services/game_logic_service.dart';
 import '../widgets/playing_card_widget.dart';
 import '../widgets/bid_dialog.dart';
 
@@ -426,7 +428,7 @@ class _GameTablePageState extends State<GameTablePage> {
     );
   }
 
-  Widget _buildPlayerHand(List hand, BuildContext context, game, String playerId) {
+  Widget _buildPlayerHand(List<dynamic> hand, BuildContext context, game, String playerId) {
     if (hand.isEmpty) {
       return Container(
         padding: const EdgeInsets.all(20),
@@ -442,6 +444,16 @@ class _GameTablePageState extends State<GameTablePage> {
 
     final isMyTurn = game.currentPlayer?.id == playerId;
     final isPlaying = game.currentRound?.phase == GamePhase.playing;
+    
+    // Get the lead suit from current trick
+    final leadSuit = game.currentRound?.leadSuit;
+    
+    // Determine which cards are playable
+    final gameLogicService = GameLogicService();
+    final typedHand = hand.cast<PlayingCard>();
+    final playableCards = isMyTurn && isPlaying
+        ? gameLogicService.getPlayableCards(typedHand, leadSuit)
+        : <PlayingCard>[];
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -491,20 +503,43 @@ class _GameTablePageState extends State<GameTablePage> {
             scrollDirection: Axis.horizontal,
             child: Row(
               children: hand.map<Widget>((card) {
-                final canPlay = isMyTurn && isPlaying;
+                final isCardPlayable = playableCards.contains(card);
+                final canInteract = isMyTurn && isPlaying && isCardPlayable;
+                
                 return Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 4),
                   child: GestureDetector(
-                    onTap: canPlay
+                    onTap: canInteract
                         ? () {
                             context.read<CardGameBloc>().add(
                                   PlayCardEvent(playerId: playerId, card: card),
                                 );
                           }
                         : null,
-                    child: Opacity(
-                      opacity: canPlay ? 1.0 : 0.6,
-                      child: PlayingCardWidget(card: card, size: 100),
+                    child: Stack(
+                      children: [
+                        Opacity(
+                          opacity: (isMyTurn && isPlaying) 
+                              ? (isCardPlayable ? 1.0 : 0.4)
+                              : 0.6,
+                          child: PlayingCardWidget(card: card, size: 100),
+                        ),
+                        // Show a visual indicator for disabled cards during player's turn
+                        if (isMyTurn && isPlaying && !isCardPlayable)
+                          Positioned.fill(
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.black.withValues(alpha: 0.5),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Icon(
+                                Icons.block,
+                                color: Colors.red,
+                                size: 40,
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
                 );
@@ -527,6 +562,16 @@ class _GameTablePageState extends State<GameTablePage> {
               style: GoogleFonts.poppins(
                 color: Colors.blue.shade300,
                 fontSize: 12,
+              ),
+            ),
+          ] else if (isMyTurn && leadSuit != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              'You must follow suit if possible',
+              style: GoogleFonts.poppins(
+                color: Colors.yellow.shade300,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
               ),
             ),
           ],

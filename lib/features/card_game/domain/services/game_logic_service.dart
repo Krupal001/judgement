@@ -66,6 +66,26 @@ class GameLogicService {
     return true;
   }
 
+  // Get list of playable cards from player's hand
+  List<PlayingCard> getPlayableCards(
+    List<PlayingCard> playerHand,
+    Suit? leadSuit,
+  ) {
+    // If no lead suit (first card of trick), all cards are playable
+    if (leadSuit == null) return playerHand;
+
+    // Check if player has cards of the lead suit
+    final leadSuitCards = playerHand.where((c) => c.suit == leadSuit).toList();
+    
+    // If player has lead suit cards, they must play one of them
+    if (leadSuitCards.isNotEmpty) {
+      return leadSuitCards;
+    }
+
+    // If player doesn't have lead suit, all cards are playable
+    return playerHand;
+  }
+
   // Determine winner of a trick
   String determineTrickWinner(
     List<CardPlay> trick,
