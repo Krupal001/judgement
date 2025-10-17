@@ -42,9 +42,8 @@ class GameLogicService {
       Suit.diamonds,
       Suit.clubs,
       Suit.hearts,
-      null, // no trump
     ];
-    return trumpPattern[roundNumber % 5];
+    return trumpPattern[roundNumber % 4];
   }
 
   // Check if a card play is valid

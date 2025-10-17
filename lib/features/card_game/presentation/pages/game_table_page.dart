@@ -21,6 +21,8 @@ class _GameTablePageState extends State<GameTablePage> {
   int? _lastRoundShownWinner;
   bool _gameCompleteShown = false;
   late ConfettiController _confettiController;
+  int? _lastTrickNumber;
+  String? _lastTrickWinnerId;
 
   @override
   void initState() {
@@ -116,6 +118,28 @@ class _GameTablePageState extends State<GameTablePage> {
                 print('❌ Not showing dialog');
               }
 
+              // Check if trick just completed and show winner
+              if (round.phase == GamePhase.playing && 
+                  round.trickNumber > (_lastTrickNumber ?? -1) &&
+                  round.currentTrick.isEmpty) {
+                // Trick was just won, show toast
+                final trickWinnerId = game.currentPlayer?.id;
+                if (trickWinnerId != null && trickWinnerId != _lastTrickWinnerId) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted) {
+                      setState(() {
+                        _lastTrickNumber = round.trickNumber;
+                        _lastTrickWinnerId = trickWinnerId;
+                      });
+                      final winner = game.getPlayerById(trickWinnerId);
+                      if (winner != null) {
+                        _showTrickWinnerToast(context, winner.name);
+                      }
+                    }
+                  });
+                }
+              }
+              
               // Check if round just completed and show winner
               if (round.phase == GamePhase.roundComplete && 
                   _lastRoundShownWinner != round.roundNumber) {
@@ -125,6 +149,9 @@ class _GameTablePageState extends State<GameTablePage> {
                       _lastRoundShownWinner = round.roundNumber;
                       // Also reset dialog key when round completes to prepare for next round
                       _lastBidDialogPlayerId = null;
+                      // Reset trick tracking for next round
+                      _lastTrickNumber = null;
+                      _lastTrickWinnerId = null;
                     });
                     _showRoundWinner(context, game, round.roundNumber);
                   }
@@ -233,8 +260,8 @@ class _GameTablePageState extends State<GameTablePage> {
         phaseColor = Color(0xFF95a5a6);
     }
 
-    // Calculate total rounds (1 to 5 cards)
-    final totalRounds = 5;
+    // Calculate total rounds (1 to 4 cards, repeating trump pattern)
+    final totalRounds = 4;
     final currentRoundNumber = round.roundNumber + 1;
 
     return Container(
@@ -651,6 +678,37 @@ class _GameTablePageState extends State<GameTablePage> {
             ),
           ],
         ],
+      ),
+    );
+  }
+
+  void _showTrickWinnerToast(BuildContext context, String winnerName) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(Icons.emoji_events, color: Color(0xFFf39c12), size: 24),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                '$winnerName won the trick!',
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: Color(0xFF0f3460),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(color: Color(0xFFf39c12), width: 2),
+        ),
+        duration: const Duration(seconds: 2),
+        margin: const EdgeInsets.all(16),
       ),
     );
   }

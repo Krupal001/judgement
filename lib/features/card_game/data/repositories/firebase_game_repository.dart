@@ -447,12 +447,12 @@ class FirebaseGameRepository implements GameRepository {
   GameRound _completeRound(CardGameState game, List<Player> players) {
     final currentCards = game.currentRound!.cardsPerPlayer;
     
-    // Game goes from 1 to 5 cards over 5 rounds
+    // Game goes from 1 to 4 cards over 4 rounds, then repeats
     final nextCards = currentCards + 1;
     
-    // Check if game is complete (after 5 rounds)
-    if (nextCards > 5) {
-      print('🎉 Game complete after 5 rounds!');
+    // Check if game is complete (after 4 rounds)
+    if (nextCards > 4) {
+      print('🎉 Game complete after 4 rounds!');
       return game.currentRound!.copyWith(phase: GamePhase.gameComplete);
     }
 
