@@ -588,22 +588,20 @@ class FirebaseGameRepository implements GameRepository {
     }
   }
 
-  // Stream for real-time updates with timeout handling
+  // Stream for real-time updates with error handling
   Stream<CardGameState> watchGameState(String gameId) {
     return _database.child('games').child(gameId).onValue
-        .timeout(
-          const Duration(seconds: 30),
-          onTimeout: (sink) {
-            print('⏱️ Firebase stream timeout - reconnecting...');
-            // Don't close the sink, just log the timeout
-            // The stream will continue listening
-          },
-        )
         .map((event) {
           if (event.snapshot.value == null) {
+            print('⚠️ Game state is null for gameId: $gameId');
             throw Exception('Game not found');
           }
+          print('📡 Firebase update received for game: $gameId');
           return _gameStateFromJson(event.snapshot.value as Map, gameId);
+        })
+        .handleError((error) {
+          print('❌ Firebase stream error: $error');
+          // Don't throw - let the listener handle it
         });
   }
 

@@ -12,6 +12,7 @@ part 'card_game_state.dart';
 class CardGameBloc extends Bloc<CardGameEvent, CardGameBlocState> {
   final GameRepository repository;
   StreamSubscription? _gameSubscription;
+  Timer? _keepAliveTimer;
 
   CardGameBloc({required this.repository}) : super(CardGameInitial()) {
     on<CreateGameEvent>(_onCreateGame);
@@ -27,11 +28,13 @@ class CardGameBloc extends Bloc<CardGameEvent, CardGameBlocState> {
   @override
   Future<void> close() {
     _gameSubscription?.cancel();
+    _keepAliveTimer?.cancel();
     return super.close();
   }
 
   void _startListening(String gameId, String currentPlayerId) {
     _gameSubscription?.cancel();
+    _keepAliveTimer?.cancel();
     
     print('🎧 Starting Firebase listener for game: $gameId, player: $currentPlayerId');
     
@@ -40,17 +43,33 @@ class CardGameBloc extends Bloc<CardGameEvent, CardGameBlocState> {
           .watchGameState(gameId)
           .listen(
             (gameState) {
-              print('✅ Firebase update received - Phase: ${gameState.currentRound?.phase}, CurrentPlayerIndex: ${gameState.currentRound?.currentPlayerIndex}');
-              print('Players: ${gameState.players.map((p) => '${p.name}(bid: ${p.bid})').toList()}');
+              print('✅ Firebase update received - Phase: ${gameState.currentRound?.phase}, Round: ${gameState.currentRound?.roundNumber}');
+              print('Players: ${gameState.players.map((p) => '${p.name}(bid: ${p.bid}, tricks: ${p.tricksWon})').toList()}');
               add(GameStateUpdatedEvent(gameState: gameState, currentPlayerId: currentPlayerId));
             },
             onError: (error) {
               print('❌ Firebase listener error: $error');
-              // Don't emit error state, just log it and try to continue
-              // The game will continue with the last known state
+              print('🔄 Attempting to reconnect...');
+              // Try to reconnect after a short delay
+              Future.delayed(const Duration(seconds: 2), () {
+                if (!isClosed) {
+                  print('🔄 Reconnecting Firebase listener...');
+                  _startListening(gameId, currentPlayerId);
+                }
+              });
             },
             cancelOnError: false,  // Keep listening even if there's an error
           );
+      
+      // Start keepalive timer - refresh state every 15 seconds to prevent disconnection
+      _keepAliveTimer = Timer.periodic(const Duration(seconds: 15), (timer) {
+        if (!isClosed) {
+          print('💓 Keepalive: Refreshing game state...');
+          add(RefreshGameEvent());
+        } else {
+          timer.cancel();
+        }
+      });
     }
   }
 
