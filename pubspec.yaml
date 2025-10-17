@@ -51,6 +51,7 @@ dependencies:
   
   # Animations
   animate_do: ^3.1.2
+  confetti: ^0.7.0
   
   # UI
   google_fonts: ^6.1.0
